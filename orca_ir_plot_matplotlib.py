@@ -72,7 +72,7 @@ def gauss(a, m, x, w):
 
 # parse arguments
 parser = argparse.ArgumentParser(
-    prog="orca_ir", description="Easily plot IR spectra from orca.out"
+    prog="orca_ir_plot_matplotlib", description="Easily plot IR spectra from orca.out"
 )
 
 # filename is required

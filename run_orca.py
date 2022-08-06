@@ -168,7 +168,12 @@ if __name__ == "__main__":
 
     # *---------------------------------#
     # * Run the calculation
-    os.system(f"{ORCA_PATH} {input_file} > {namespace + '.out'} &")
+    if OPERATING_SYTEM in ("win32", "Windows"):
+        subprocess.run([f"{ORCA_PATH}", input_file, ">", f"{namespace}.out"],
+             stdout=subprocess.PIPE, shell=True, check=True)
+    elif OPERATING_SYTEM in ("linux", "Linux", "Darwin"):
+        subprocess.run([f"{ORCA_PATH}", input_file, ">", f"{namespace}.out"],
+             stdout=subprocess.PIPE, check=True)
     # *---------------------------------#
 
     print("---------------------------------")
@@ -177,10 +182,10 @@ if __name__ == "__main__":
 
     os.chdir("..")
     if OPERATING_SYTEM in ("win32", "Windows"):
-        subprocess.run(["copy", f"{temp1_path}\\{namespace}+ '.out'", cwd],
+        subprocess.run(["copy", f"{temp1_path}\\{namespace}.out", cwd],
              stdout=subprocess.PIPE, shell=True, check=True)
     elif OPERATING_SYTEM in ("linux", "Linux", "Darwin"):
-        subprocess.run(["copy", f"{temp1_path}\\{namespace}+ '.out'", cwd],
+        subprocess.run(["cp", f"{temp1_path}\\{namespace}.out", cwd],
              stdout=subprocess.PIPE, check=True)
 
     print("------------------------------------")
