@@ -6,9 +6,9 @@ Author: Martin Dagleish (MRJD)
 
 Version 0.4.3
 
-This script is used to run the XTB program and convert the \
-output .g98 to .molden format 
-in order to process the output in ChemCraft. 
+This script is used to run the XTB program and convert the
+output .g98 to .molden format
+in order to process the output in ChemCraft.
 
 MIT License
 
@@ -34,7 +34,7 @@ SOFTWARE.
 """
 
 # * Changelog:
-# * 0.4.3 - Added Chem3D cmd and fixed Linux imcompatibility 
+# * 0.4.3 - Added Chem3D cmd and fixed Linux imcompatibility
 # * 0.4.2 - Added support for Linux and MacOS
 # * 0.4.1 - Added support for multiple solvent types and raise error if user input is not valid
 # * 0.4.0 - Added conversion from .g98 to .molden format and added .trj.xyz output
@@ -66,7 +66,7 @@ except ImportError:
 #!##############################################################################
 #!                                 PART 1                                      #
 #!##############################################################################
-#! Check if programms are all installed for script to work.
+#! Check if programms are all installed in order for the script to work.
 
 # * Show the OS running this script
 OPERATING_SYTEM = sys.platform
@@ -219,8 +219,10 @@ solvent_dict = {
     "water": ["water", "WAT", "Water", "Wasser", "H2O", "h2o"],
 }
 
-# * Helper function for solvent
 def get_solvent(solvent_user_inp):
+    """
+    Helper function for solvent from solvent_dict.
+    """
     for solvent, solvent_names in solvent_dict.items():
         if solvent_user_inp in solvent_names:
             return solvent
@@ -322,7 +324,7 @@ if __name__ == "__main__":
             shell=True,
             check=True,
         )
-    else: 
+    else:
         subprocess.run(
             [
                 obabel,

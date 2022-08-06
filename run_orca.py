@@ -4,10 +4,10 @@
 """
 Author: Martin Dagleish (MRJD)
 
-Version 0.4.1
+Version 0.1.0
 
-This script is used to run the XTB program and convert the output .g98 to .molden format 
-in order to process the output in ChemCraft. 
+This script is used to run the ORCA program and convert the
+in order to process the output in ChemCraft.
 
 MIT License
 
@@ -33,16 +33,6 @@ SOFTWARE.
 """
 
 # * Changelog:
-# * 0.4.1 - Added support for multiple solvent types and raise error if user input is not valid
-# * 0.4.0 - Added conversion from .g98 to .molden format and added .trj.xyz output
-# *         This allows for easier reading of the .trj.xyz file and for visualization
-# *         in ChemCraft.
-# * 0.3.2 - Fixed bug where XTB would not run if the input file was not found.
-# * 0.3.1 - Added try and except for imports and added a check for the xtb executable
-# * 0.3.0 - Added support for multiple operating systems to
-# *       find the correct xtb executable
-# * 0.2.0 - Rewrote the options to be one option for xtb-call.
-# *       This is easier to use and more flexible.
 # * 0.1.0 - Initial release
 
 
@@ -52,7 +42,7 @@ import sys
 try:
     import argparse
 except ImportError:
-    print("Please install argparse.")
+    print("Please install argparse. Via pip install argparse")
     sys.exit()
 try:
     import subprocess
@@ -63,18 +53,17 @@ except ImportError:
 #!##############################################################################
 #!                                 PART 1                                      #
 #!##############################################################################
-#! Check if programms are all installed for script to work.
+#! Check if programms are all installed in order for the script to work.
 
 # * Show the OS running this script
 OPERATING_SYTEM = sys.platform
-
 
 #! Part 1.1 -> xtb installation and path finding
 
 # * Get the right xtb executable format depending on the OS
 if OPERATING_SYTEM in ("linux", "linux2", "darwin"):
     XTB_PATH = subprocess.run(
-        ["which", "xtb"], stdout=subprocess.PIPE, check=True
+        ["which", "orca"], stdout=subprocess.PIPE, check=True
     ).stdout.decode("utf-8")
     xtb = XTB_PATH.strip()
 elif OPERATING_SYTEM == "win32":
@@ -114,7 +103,8 @@ else:
 xtb_parser = argparse.ArgumentParser(
     prog="run_xtb.py",
     usage="%(prog)s xyz_file [options]",
-    description="Run a XTB calculation for a given xyz file. Optimization and frequency calculations are done per default.",
+    description="Run a XTB calculation for a given xyz file. \
+        Optimization and frequency calculations are done per default.",
 )
 
 xtb_parser.add_argument(
@@ -175,10 +165,15 @@ xtb_parser.add_argument(
           hexane, methanol, nitromethane, octanol, woctanol, phenol, toluene, \
           thf, water. (ALPB methode)",
 )
+xtb_parser.add_argument(
+    "--chem3d",
+    action="store_true",
+    help="If you want to use the Chem3D to view the resulting xyz.",
+)
 #! Possible future options:
 # xtb_parser.add_argument(
 #     "--ir-spec-plot",
-#     "-ir-plot", 
+#     "-ir-plot",
 #     action="store_true",
 #     help="Plot the IR spectrum."
 # )
@@ -210,8 +205,10 @@ solvent_dict = {
     "water": ["water", "WAT", "Water", "Wasser", "H2O", "h2o"],
 }
 
-# * Helper function for solvent
 def get_solvent(solvent_user_inp):
+    """
+    Helper function for solvent from solvent_dict.
+    """
     for solvent, solvent_names in solvent_dict.items():
         if solvent_user_inp in solvent_names:
             return solvent
@@ -276,7 +273,10 @@ if __name__ == "__main__":
         os.mkdir(temp1_path)
 
     # * copy .xyz file to temp1 folder
-    os.system(f"copy {xyz_file} {temp1_path}")
+    if OPERATING_SYTEM == "win32":
+        os.system(f"copy {xyz_file} {temp1_path}")
+    else:
+        os.system(f"cp {xyz_file} {temp1_path}")
 
     os.chdir(temp1_path)
 
@@ -294,37 +294,111 @@ if __name__ == "__main__":
     # * 2. Move the '_FREQ.molden' file to the original folder
 
     # * Run obabel
-    subprocess.run(
-        [
-            obabel,
-            f"{namespace}.g98.out",
-            "-i",
-            "g98",
-            "-o",
-            "molden",
-            "-O",
-            f"{namespace}_FREQ.molden",
-        ],
-        stdout=subprocess.PIPE,
-        shell=True,
-        check=True,
-    )
-    os.rename(f"{namespace}.xtbopt.log", f"{namespace}.xtbopt.trj.xyz")
+    if OPERATING_SYTEM in ("win32","Windows"):
+        subprocess.run(
+            [
+                obabel,
+                f"{namespace}.g98.out",
+                "-i",
+                "g98",
+                "-o",
+                "molden",
+                "-O",
+                f"{namespace}_FREQ.molden",
+            ],
+            stdout=subprocess.PIPE,
+            shell=True,
+            check=True,
+        )
+    else:
+        subprocess.run(
+            [
+                obabel,
+                f"{namespace}.g98.out",
+                "-i",
+                "g98",
+                "-o",
+                "molden",
+                "-O",
+                f"{namespace}_FREQ.molden",
+            ],
+            stdout=subprocess.PIPE,
+            check=True
+        )
+
+    if not os.path.isfile(f"{namespace}.xtbopt.trj.xyz"):
+        os.rename(f"{namespace}.xtbopt.log", f"{namespace}.xtbopt.trj.xyz")
+    else:
+        os.remove(f"{namespace}.xtbopt.trj.xyz")
+        os.rename(f"{namespace}.xtbopt.log", f"{namespace}.xtbopt.trj.xyz")
 
     os.chdir("..")
-    copy_cmds = [
-        ("copy " + f"{temp1_path}\\{namespace}{ext} " + cwd).split()
-        for ext in (
-            ".out",
-            "_FREQ.molden",
-            ".xtbopt.trj.xyz",
-            ".xtbopt.xyz",
-        )  #! Copy the output files to the original folder
-    ]
-
-    for cmd in copy_cmds:
-        subprocess.run(cmd, stdout=subprocess.PIPE, shell=True, check=True)
+    if OPERATING_SYTEM in ("win32", "Windows"):
+        copy_cmds = [
+            ("copy " + f"{temp1_path}\\{namespace}{ext} " + cwd).split()
+            for ext in (
+                ".out",
+                "_FREQ.molden",
+                ".xtbopt.trj.xyz",
+                ".xtbopt.xyz",
+            )  #! Copy the output files to the original folder
+        ]
+        for cmd in copy_cmds:
+            subprocess.run(cmd, stdout=subprocess.PIPE, shell=True, check=True)
+    elif OPERATING_SYTEM in ("linux", "Linux", "Darwin"):
+        copy_cmds = [
+            ("cp " + f"{temp1_path}/{namespace}{ext} " + cwd).split()
+            for ext in (
+                ".out",
+                "_FREQ.molden",
+                ".xtbopt.trj.xyz",
+                ".xtbopt.xyz",
+            )  #! Copy the output files to the original folder
+        ]
+        for cmd in copy_cmds:
+            subprocess.run(cmd, stdout=subprocess.PIPE, check=True)
 
     print("------------------------------------")
     print("*  Importants files copied to CWD  *")
     print("------------------------------------")
+
+    if args.chem3d:
+        print("----------------------------------------------")
+        print("*  Converting to chem3d format (tinker.xyz)  *")
+        print("----------------------------------------------")
+
+        # * Run obabel
+        if OPERATING_SYTEM in ("win32","Windows"):
+            subprocess.run(
+                [
+                    obabel,
+                    f"{namespace}.xtbopt.xyz",
+                    "-i",
+                    "xyz",
+                    "-o",
+                    "txyz",
+                    "-O",
+                    f"{namespace}_tinker.xyz",
+                ],
+                stdout=subprocess.PIPE,
+                shell=True,
+                check=True,
+            )
+        else:
+            subprocess.run(
+                [
+                    obabel,
+                    f"{namespace}.xtbopt.xyz",
+                    "-i",
+                    "xyz",
+                    "-o",
+                    "txyz",
+                    "-O",
+                    f"{namespace}_tinker.xyz",
+                ],
+                stdout=subprocess.PIPE,
+                check=True
+            )
+        print("------------------------------------")
+        print("*  Conversion to chem3d format done  *")
+        print("------------------------------------")
