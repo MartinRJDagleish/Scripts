@@ -4,7 +4,7 @@
 """
 Author: Martin Dagleish (MRJD)
 
-Version 0.4.4
+Version 0.4.5
 
 This script is used to run the XTB program and convert the
 output .g98 to .molden format in order to process the output in ChemCraft.
@@ -33,6 +33,8 @@ SOFTWARE.
 """
 
 # * Changelog:
+# * 0.4.5 - Added os.path.basename(xyz_file) to get the name of the xyz file and removing 
+# *         any autocomplete characters from the name. 
 # * 0.4.4 - try-except for installation of xtb and obabel if not found
 # * 0.4.3 - Added Chem3D cmd and fixed Linux imcompatibility
 # * 0.4.2 - Added support for Linux and MacOS
@@ -186,7 +188,7 @@ xtb_parser.add_argument(
 xtb_parser.add_argument(
     "--chem3d",
     action="store_true",
-    help="If you want to use the Chem3D to view the resulting xyz.",
+    help="If you want to use the Chem3D to view the resulting xyz. (Tinker xyz)",
 )
 #! Possible future options:
 # xtb_parser.add_argument(
@@ -238,7 +240,7 @@ args = xtb_parser.parse_args()
 #! Run the calculation, acutal programm:
 if __name__ == "__main__":
     cwd = os.getcwd()
-    xyz_file = args.xyz_file
+    xyz_file = os.path.basename(args.xyz_file)
 
     # * Gather the options for the calculation
     options = []
