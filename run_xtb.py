@@ -4,11 +4,10 @@
 """
 Author: Martin Dagleish (MRJD)
 
-Version 0.4.3
+Version 0.4.4
 
 This script is used to run the XTB program and convert the
-output .g98 to .molden format
-in order to process the output in ChemCraft.
+output .g98 to .molden format in order to process the output in ChemCraft.
 
 MIT License
 
@@ -34,6 +33,7 @@ SOFTWARE.
 """
 
 # * Changelog:
+# * 0.4.4 - try-except for installation of xtb and obabel if not found
 # * 0.4.3 - Added Chem3D cmd and fixed Linux imcompatibility
 # * 0.4.2 - Added support for Linux and MacOS
 # * 0.4.1 - Added support for multiple solvent types and raise error if user input is not valid
@@ -72,39 +72,43 @@ except ImportError:
 OPERATING_SYTEM = sys.platform
 
 
-#! Part 1.1 -> xtb installation and path finding
-
+#! Part 1.1 -> Check if xtb and obabel are installed and then 
+#! find the correct path to the xtb executable and store in variable
 # * Get the right xtb executable format depending on the OS
-if OPERATING_SYTEM in ("linux", "linux2", "darwin"):
-    XTB_PATH = subprocess.run(
-        ["which", "xtb"], stdout=subprocess.PIPE, check=True
-    ).stdout.decode("utf-8")
-    xtb = XTB_PATH.strip()
-elif OPERATING_SYTEM == "win32":
-    # xtb = "xtb.exe"
-    XTB_PATH = subprocess.run(
-        ["where.exe", "xtb"], stdout=subprocess.PIPE, check=True
-    ).stdout.decode("utf-8")
-    xtb = XTB_PATH.strip()
-else:
-    print("Is XTB installed on this OS?")
-    print("Make sure XTB is added to path.")
+try: 
+    if OPERATING_SYTEM in ("linux", "linux2", "darwin"):
+        XTB_PATH = subprocess.run(
+            ["which", "xtb"], stdout=subprocess.PIPE, check=True
+        ).stdout.decode("utf-8")
+        xtb = XTB_PATH.strip()
+    elif OPERATING_SYTEM == "win32":
+        XTB_PATH = subprocess.run(
+            ["where.exe", "xtb"], stdout=subprocess.PIPE, check=True
+        ).stdout.decode("utf-8")
+        xtb = XTB_PATH.strip()
+    else:
+        print("Is XTB installed on this OS?")
+        print("Make sure XTB is added to path.")
+        sys.exit()
+except subprocess.CalledProcessError:
+    print("xtb not found. Please install xtb and make sure it is added to PATH.")
     sys.exit()
 
+
 #! Part 1.2 -> Search for OpenBabel (obabel) executable
-if OPERATING_SYTEM in ("linux", "linux2", "darwin"):
-    OPENBABEL_PATH = subprocess.run(
-        ["which", "obabel"], stdout=subprocess.PIPE, check=True
-    ).stdout.decode("utf-8")
-    obabel = OPENBABEL_PATH.strip()
-elif OPERATING_SYTEM == "win32":
-    OPENBABEL_PATH = subprocess.run(
-        ["where.exe", "obabel"], stdout=subprocess.PIPE, check=True
-    ).stdout.decode("utf-8")
-    obabel = OPENBABEL_PATH.strip()
-else:
-    print("Is OpenBabel installed on this OS?")
-    print("Make sure OpenBabel is added to path.")
+try: 
+    if OPERATING_SYTEM in ("linux", "linux2", "darwin"):
+        OPENBABEL_PATH = subprocess.run(
+            ["which", "obabel"], stdout=subprocess.PIPE, check=True
+        ).stdout.decode("utf-8")
+        obabel = OPENBABEL_PATH.strip()
+    elif OPERATING_SYTEM == "win32":
+        OPENBABEL_PATH = subprocess.run(
+            ["where.exe", "obabel"], stdout=subprocess.PIPE, check=True
+        ).stdout.decode("utf-8")
+        obabel = OPENBABEL_PATH.strip()
+except subprocess.CalledProcessError:
+    print("obabel not found. Please install OpenBabel and make sure it is added to PATH.")
     sys.exit()
 
 
