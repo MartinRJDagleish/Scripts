@@ -35,12 +35,14 @@ SOFTWARE.
 """
 
 #* Changelog 
+#* V 2.1.3 - 2022-08-08 
+#* - Added argparse for Path or single file input 
 #* V 2.1.2 — 2022-08-04
 #* - pwd is now working as intended 
 #* - export works fine
 
 import os
-import sys 
+import sys
 
 try:
     import pandas as pd 
@@ -48,22 +50,65 @@ except ImportError:
     print("Pandas is not installed. Please install it using pip install pandas.")
     sys.exit()
 
-pwd = os.getcwd() 
+try:
+    import argparse
+except ImportError:
+    print("argparse is not installed. Please install it using pip install argparse.")
+    sys.exit()
 
-# ! Check if export folder exists!
-parent_dir = os.path.dirname(pwd)
-path_filtered_d = os.path.join(parent_dir, "Filtered_Data") 
-if not os.path.isdir(path_filtered_d):
-    os.mkdir(path_filtered_d)
 
-# ! List of local files in current directory
-files = [
-    file
-    for file in os.listdir(pwd)
-    if os.path.isfile(file)
-    and (file.endswith(".csv") or file.endswith(".dat"))
-    and not (file.endswith("_f_data.csv") or file.endswith("_f_log.csv"))
-]
+# * Create the parser
+spectro_parser = argparse.ArgumentParser(
+    prog="general_filter_spectro.py",
+    usage="%(prog)s [options]",
+    description="Run the general filter script. \
+        This script for made for the Agilent Cary 60 UV Vis spectrometre. \
+        It converts the output to a more useable format and provides basic filtering.",
+)
+
+spectro_parser.add_argument(
+    "-P",
+    "--path",  #! Positional argument
+    metavar="PATH",
+    type=str,
+    help="The path you want to run the script in. (default: pwd)",
+)
+spectro_parser.add_argument(
+    "-F",
+    "--file",  #! Positional argument
+    metavar="FILE",
+    type=str,
+    help="The single file you want to run the script on.",
+)
+
+
+# * Execute the parse_args() method
+args = spectro_parser.parse_args()
+
+if not args.path or args.path == ".":
+    pwd = os.getcwd()
+    # ! Check if export folder exists!
+    parent_dir = os.path.dirname(pwd)
+    path_filtered_d = os.path.join(parent_dir, "Filtered_Data") 
+    if not os.path.isdir(path_filtered_d):
+        os.mkdir(path_filtered_d)
+
+    # ! List of local files in current directory
+    files = [
+        file
+        for file in os.listdir(pwd)
+        if os.path.isfile(file)
+        and (file.endswith(".csv") or file.endswith(".dat"))
+        and not (file.endswith("_f_data.csv") or file.endswith("_f_log.csv"))
+    ]
+
+if args.file:
+    if os.path.isfile(args.file):
+        files = [args.file]
+    else:
+        print("File does not exist. Pls make sure you have the correct path.")
+        sys.exit(1)
+
 
 filter_dict = {
     "OD_": "",
@@ -77,7 +122,6 @@ filter_dict = {
     "90s_": "",
     "10x2mm_": "",
 }
-
 
 def filter_filename(filename_str):
     for old, new in filter_dict.items():
