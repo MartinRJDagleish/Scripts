@@ -1,10 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 """
 Author: Martin Dagleish
 
-Version 2.1.2
+Version 2.1.3
 
 This script filters all .csv files in the current dir, 
 that were obtained by using a Agilent Cary 60 UV Vis Spectrometre. 
@@ -36,7 +36,7 @@ SOFTWARE.
 
 #* Changelog 
 #* V 2.1.3 - 2022-08-08 
-#* - Added argparse for Path or single file input 
+#* - Added argparse for path or single file input 
 #* V 2.1.2 — 2022-08-04
 #* - pwd is now working as intended 
 #* - export works fine
@@ -172,7 +172,7 @@ for file in files:
     df_wo_log.reset_index(inplace=True, drop=True)  #! reindex df
 
     # * Save col names
-    old_cols_names = [col for col in df_wo_log.columns]
+    old_cols_names = list(df_wo_log.columns)
     new_cols_names = old_cols_names[:-1]
 
     # * Change col names for dropping -> "delete" cols
