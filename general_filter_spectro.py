@@ -81,7 +81,6 @@ spectro_parser.add_argument(
     help="The single file you want to run the script on.",
 )
 
-
 # * Execute the parse_args() method
 args = spectro_parser.parse_args()
 
@@ -92,15 +91,22 @@ if not args.path or args.path == ".":
     path_filtered_d = os.path.join(parent_dir, "Filtered_Data") 
     if not os.path.isdir(path_filtered_d):
         os.mkdir(path_filtered_d)
+else: 
+    pwd = os.path.abspath(args.path)
+    # ! Check if export folder exists!
+    parent_dir = os.path.dirname(pwd)
+    path_filtered_d = os.path.join(parent_dir, "Filtered_Data") 
+    if not os.path.isdir(path_filtered_d):
+        os.mkdir(path_filtered_d)
 
-    # ! List of local files in current directory
-    files = [
-        file
-        for file in os.listdir(pwd)
-        if os.path.isfile(file)
-        and (file.endswith(".csv") or file.endswith(".dat"))
-        and not (file.endswith("_f_data.csv") or file.endswith("_f_log.csv"))
-    ]
+# ! List of files in chosen directory
+files = [
+    os.path.join(pwd,file)
+    for file in os.listdir(pwd)
+    if os.path.isfile(os.path.join(pwd,file))
+    and (file.endswith(".csv") or file.endswith(".dat"))
+    and not (file.endswith("_f_data.csv") or file.endswith("_f_log.csv"))
+]
 
 if args.file:
     if os.path.isfile(args.file):
@@ -108,7 +114,6 @@ if args.file:
     else:
         print("File does not exist. Pls make sure you have the correct path.")
         sys.exit(1)
-
 
 filter_dict = {
     "OD_": "",
@@ -218,16 +223,20 @@ for file in files:
     )  # * for .csv export
     print("------------------------------")
     print("Exporting")
-    print(f"    {file}")
+    print(f"    {os.path.basename(file)}")
     print(f"    as")
-    print(f"    {new_filename_data}")
+    print(f"    {os.path.basename(new_filename_data)}")
     print("-> EXPORT OF FILE WAS SUCCESSFUL!\n")
 
     file_counter += 1
     print(f"           {file_counter}/{len(files)} DONE!")
     print("------------------------------\n")
 
-print("\n")
-print("--------------------------------")
-print("     EXPORT WAS SUCCESSFUL!     ")
-print("--------------------------------")
+if files:
+    print("\n")
+    print("--------------------------------")
+    print("     EXPORT WAS SUCCESSFUL!     ")
+    print("--------------------------------")
+else: 
+    print("No files to export! Make sure the path contains files to export.")
+    sys.exit(1)
