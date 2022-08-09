@@ -161,11 +161,11 @@ for file in files:
     no_wl_second = second_row_dict.get("Wavelength (nm)", 0)
 
     if no_wl_first or no_wl_second:  #! test for non-zero value
-        if (no_wl_first > 1):  #! if more than once -> row most-likely contains only wavelength…
-            df_wo_log.drop([0])
+        if (no_wl_first >= 1):  #! if more than once -> row most-likely contains only wavelength…
+            df_wo_log.drop([0], inplace=True)
 
-        if (no_wl_second > 1):  #! if more than once -> row most-likely contains only wavelength…
-            df_wo_log.drop([1])
+        if (no_wl_second >= 1):  #! if more than once -> row most-likely contains only wavelength…
+            df_wo_log.drop([1], inplace=True)
 
     # * Invert columns to start with low values and go up
     df_wo_log = df_wo_log.reindex(index=df_wo_log.index[::-1])  #! invert columns
