@@ -4,7 +4,7 @@
 """
 Author: Martin Dagleish
 
-Version 2.1.3
+Version 2.1.4
 
 This script filters all .csv files in the current dir, 
 that were obtained by using a Agilent Cary 60 UV Vis Spectrometre. 
@@ -35,6 +35,9 @@ SOFTWARE.
 """
 
 #* Changelog 
+#* V 2.1.4 - 2020-08-10
+#* - Fixed bug with filter_dict -> filename should be filtered not path 
+#* with dir names -> -F und --filter working now 
 #* V 2.1.3 - 2022-08-08 
 #* - Added argparse for path or single file input 
 #* V 2.1.2 — 2022-08-04
@@ -79,6 +82,12 @@ spectro_parser.add_argument(
     metavar="FILE",
     type=str,
     help="The single file you want to run the script on.",
+)
+spectro_parser.add_argument(
+    "--filter",  #! Positional argument
+    action="store_true",
+    # default=False,
+    help="Run the filter on the filenames (default: False). Filter for: OD_, 0p5_, 10mm_, lex_, 340nm_, illu_, 10s_, 210s_, 90s_, 10x2mm_"
 )
 
 # * Execute the parse_args() method
@@ -211,10 +220,15 @@ for file in files:
 
     # ! Check for file output-type and export accordingly
     #! Filename cleanup
-    filename = filter_filename(os.path.splitext(file)[0])
-
+    path, filename = os.path.split(file)
+    if args.filter:
+        filename = filter_filename(os.path.splitext(filename)[0])
+    else:
+        filename = os.path.splitext(filename)[0]
+    
     new_filename_data = filename + "_f_data.csv"
     new_filename_log = filename + "_f_log.csv"
+
     df_wo_log.to_csv(
         os.path.join(path_filtered_d, new_filename_data), sep=",", index=False 
     )  # * for .csv export
