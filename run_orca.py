@@ -4,7 +4,7 @@
 """
 Author: Martin Dagleish (MRJD)
 
-Version 0.1.0
+Version 0.2.2
 
 This script is used to run the ORCA program.
 
@@ -32,8 +32,12 @@ SOFTWARE.
 """
 
 # * Changelog:
+# * 0.2.2 - Prettified printing of ORCA output.
+# * 0.2.1 - Path slashes wrong for Linux
+# * 0.2.0 - Fixed Linux not working as stdout has to be written via python and not ">" 
 # * 0.1.0 - Initial release
 
+VERSION = "0.2.2"
 
 import os
 import sys
@@ -59,29 +63,13 @@ OPERATING_SYTEM = sys.platform
 
 #! Part 1.1 -> xtb installation and path finding
 
-#* This is a HIGHLY custom directory for the ORCA programme, but the problem is
-#* that Linux already has a 'ORCA' programme (screen reader) which means that 
-#* the path has to be added manually. (Or at least I don't know how to do it)
+# * This is a HIGHLY custom directory for the ORCA programme, but the problem is
+# * that Linux already has a 'ORCA' programme (screen reader) which means that
+# * the path has to be added manually. (Or at least I don't know how to do it)
 if OPERATING_SYTEM in ("linux", "linux2"):
     ORCA_PATH = "/loctmp/dam63759/orca/orca"
 elif OPERATING_SYTEM == "win32":
     ORCA_PATH = r"C:\ORCA\orca.exe"
-
-# #! Part 1.2 -> Search for OpenBabel (obabel) executable
-# if OPERATING_SYTEM in ("linux", "linux2", "darwin"):
-#     OPENBABEL_PATH = subprocess.run(
-#         ["which", "obabel"], stdout=subprocess.PIPE, check=True
-#     ).stdout.decode("utf-8")
-#     obabel = OPENBABEL_PATH.strip()
-# elif OPERATING_SYTEM == "win32":
-#     OPENBABEL_PATH = subprocess.run(
-#         ["where.exe", "obabel"], stdout=subprocess.PIPE, check=True
-#     ).stdout.decode("utf-8")
-#     obabel = OPENBABEL_PATH.strip()
-# else:
-#     print("Is OpenBabel installed on this OS?")
-#     print("Make sure OpenBabel is added to path.")
-#     sys.exit()
 
 
 #!##############################################################################
@@ -93,7 +81,7 @@ elif OPERATING_SYTEM == "win32":
 orca_parser = argparse.ArgumentParser(
     prog="run_orca.py",
     usage="%(prog)s input-file [options]",
-    description="Run an ORCA calculation for a given input file.",
+    description=f"Run an ORCA calculation for a given input file. -> Script Version {VERSION}",
 )
 
 orca_parser.add_argument(
@@ -101,6 +89,12 @@ orca_parser.add_argument(
     metavar="INPUT-FILE",
     type=str,
     help="The input-file to run the calculation on. Either with or without extension.",
+)
+orca_parser.add_argument(
+    "--xyz",  #! Positional argument
+    metavar="XYZ-FILE",
+    type=str,
+    help="The xyz-file to copy in temp1 (temporary folder for calculations).",
 )
 
 #! Possible future options:
@@ -161,33 +155,63 @@ if __name__ == "__main__":
     # * copy .xyz file to temp1 folder
     if OPERATING_SYTEM == "win32":
         os.system(f"copy {input_file} {temp1_path}")
+        if args.xyz:
+            xyz_file = [args.xyz if args.xyz.endswith(".xyz") else args.xyz + ".xyz"][0]
+            if os.path.isfile(os.path.join(cwd, xyz_file)):
+                os.system(f"copy {xyz_file} {temp1_path}")
+            else:
+                print(f"{xyz_file} not found in {cwd}")
+                sys.exit(1)
     else:
         os.system(f"cp {input_file} {temp1_path}")
+        if args.xyz:
+            xyz_file = [args.xyz if args.xyz.endswith(".xyz") else args.xyz + ".xyz"][0]
+            if os.path.isfile(os.path.join(cwd, xyz_file)):
+                os.system(f"cp {xyz_file} {temp1_path}")
+            else:
+                print(f"{xyz_file} not found in {cwd}")
+                sys.exit(1)
 
     os.chdir(temp1_path)
 
     # *---------------------------------#
     # * Run the calculation
     if OPERATING_SYTEM in ("win32", "Windows"):
-        subprocess.run([f"{ORCA_PATH}", input_file, ">", f"{namespace}.out"],
-             stdout=subprocess.PIPE, shell=True, check=True)
+        subprocess.run(
+            ["start", "/b", f"{ORCA_PATH}", input_file, ">", f"{namespace}.out"],
+            stdout=subprocess.PIPE,
+            shell=True,
+            check=True
+        )
     elif OPERATING_SYTEM in ("linux", "Linux", "Darwin"):
-        subprocess.run([f"{ORCA_PATH}", input_file, ">", f"{namespace}.out"],
-             stdout=subprocess.PIPE, check=True)
+        with open(f"{namespace}.out", "w", encoding="utf-8") as out:
+            subprocess.run(
+                [f"{ORCA_PATH}", input_file],
+                stdout=out,
+                shell=False,
+                check=True
+            )
     # *---------------------------------#
 
-    print("---------------------------------")
-    print("*      ORCA RUN SUCCESSFUL!      *")
-    print("---------------------------------")
+    print("\n"+40*"-")
+    print("*" + "ORCA RUN FINISHED!".center(38,' ') + "*")
+    print(40*"-")
 
     os.chdir("..")
     if OPERATING_SYTEM in ("win32", "Windows"):
-        subprocess.run(["copy", f"{temp1_path}\\{namespace}.out", cwd],
-             stdout=subprocess.PIPE, shell=True, check=True)
+        subprocess.run(
+            ["copy", f"{temp1_path}\\{namespace}.out", cwd],
+            stdout=subprocess.PIPE,
+            shell=True,
+            check=True,
+        )
     elif OPERATING_SYTEM in ("linux", "Linux", "Darwin"):
-        subprocess.run(["cp", f"{temp1_path}\\{namespace}.out", cwd],
-             stdout=subprocess.PIPE, check=True)
+        subprocess.run(
+            ["cp", f"{temp1_path}/{namespace}.out", cwd],
+            stdout=subprocess.PIPE,
+            check=True,
+        )
 
-    print("------------------------------------")
-    print("*       Output copied to CWD       *")
-    print("------------------------------------")
+    print(40*"-")
+    print("*" + "Output copied to CWD".center(38,' ') + "*")
+    print(40*"-")

@@ -59,7 +59,13 @@ def main():
             lp_count = sum(
                 "Lp" in line for line in lines
             )  # * count the number of Lp lines
-            num_atoms = str(int(lines[0]) - lp_count)  # * number of atoms
+            xx_count = sum(
+                "Xx" in line for line in lines
+            )
+            if int(lines[0]) < 0:
+                print("Error: Number of atoms is negative.")
+                sys.exit(1)
+            num_atoms = str(int(lines[0]) - lp_count - xx_count)  # * number of atoms
         with open(os.path.splitext(file)[0] + "_std.xyz", "w", encoding="utf-8") as f:
             f.write(num_atoms + "\n")  # * write the number of atoms
             f.write("\n")  # * write a blank line

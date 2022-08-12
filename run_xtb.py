@@ -4,7 +4,7 @@
 """
 Author: Martin Dagleish (MRJD)
 
-Version 0.4.5
+Version 0.4.7
 
 This script is used to run the XTB program and convert the
 output .g98 to .molden format in order to process the output in ChemCraft.
@@ -33,8 +33,10 @@ SOFTWARE.
 """
 
 # * Changelog:
-# * 0.4.5 - Added os.path.basename(xyz_file) to get the name of the xyz file and removing 
-# *         any autocomplete characters from the name. 
+# * 0.4.7 - Added version info to script
+# * 0.4.6 - Fixed Linux not working as stdout has to be written via python and not ">" 
+# * 0.4.5 - Added os.path.basename(xyz_file) to get the name of the xyz file and removing
+# *         any autocomplete characters from the name.
 # * 0.4.4 - try-except for installation of xtb and obabel if not found
 # * 0.4.3 - Added Chem3D cmd and fixed Linux imcompatibility
 # * 0.4.2 - Added support for Linux and MacOS
@@ -50,6 +52,7 @@ SOFTWARE.
 # *       This is easier to use and more flexible.
 # * 0.1.0 - Initial release
 
+VERSION = "0.4.7"
 
 import os
 import sys
@@ -74,10 +77,10 @@ except ImportError:
 OPERATING_SYTEM = sys.platform
 
 
-#! Part 1.1 -> Check if xtb and obabel are installed and then 
+#! Part 1.1 -> Check if xtb and obabel are installed and then
 #! find the correct path to the xtb executable and store in variable
 # * Get the right xtb executable format depending on the OS
-try: 
+try:
     if OPERATING_SYTEM in ("linux", "linux2", "darwin"):
         XTB_PATH = subprocess.run(
             ["which", "xtb"], stdout=subprocess.PIPE, check=True
@@ -91,14 +94,14 @@ try:
     else:
         print("Is XTB installed on this OS?")
         print("Make sure XTB is added to path.")
-        sys.exit()
+        sys.exit(1)
 except subprocess.CalledProcessError:
     print("xtb not found. Please install xtb and make sure it is added to PATH.")
-    sys.exit()
+    sys.exit(1)
 
 
 #! Part 1.2 -> Search for OpenBabel (obabel) executable
-try: 
+try:
     if OPERATING_SYTEM in ("linux", "linux2", "darwin"):
         OPENBABEL_PATH = subprocess.run(
             ["which", "obabel"], stdout=subprocess.PIPE, check=True
@@ -110,7 +113,9 @@ try:
         ).stdout.decode("utf-8")
         obabel = OPENBABEL_PATH.strip()
 except subprocess.CalledProcessError:
-    print("obabel not found. Please install OpenBabel and make sure it is added to PATH.")
+    print(
+        "obabel not found. Please install OpenBabel and make sure it is added to PATH."
+    )
     sys.exit()
 
 
@@ -123,8 +128,8 @@ except subprocess.CalledProcessError:
 xtb_parser = argparse.ArgumentParser(
     prog="run_xtb.py",
     usage="%(prog)s xyz_file [options]",
-    description="Run a XTB calculation for a given xyz file. \
-        Optimization and frequency calculations are done per default.",
+    description=f"Run a XTB calculation for a given xyz file. \
+        Optimization and frequency calculations are done per default. -> Script Version {VERSION}"
 )
 
 xtb_parser.add_argument(
@@ -225,6 +230,7 @@ solvent_dict = {
     "water": ["water", "WAT", "Water", "Wasser", "H2O", "h2o"],
 }
 
+
 def get_solvent(solvent_user_inp):
     """
     Helper function for solvent from solvent_dict.
@@ -263,7 +269,7 @@ if __name__ == "__main__":
         namespace = os.path.splitext(os.path.basename(xyz_file))[0]
         options.append("--namespace")
         options.append(namespace)
-        options.append(f" > {namespace}.out")
+        # options.append(f" > {namespace}.out") #? Old version
 
     if args.verbose:
         options.append("--verbose")
@@ -302,7 +308,17 @@ if __name__ == "__main__":
 
     # *---------------------------------#
     # * Run the calculation
-    os.system(f"{xtb} {xyz_file} --ohess {' '.join(options)}")
+    # ? you should not use os.system -> use subprocess.run instead
+    # *---------------------------------#
+    with open(f"{namespace}.out", "w", encoding="utf-8") as out:
+        xtb_output = subprocess.run(
+            [f"{xtb}", f"{xyz_file}", "--ohess", *options],
+            stdout=out,
+            check=True,
+            text=True
+        )
+
+    # os.system(f"{xtb} {xyz_file} --ohess {' '.join(options)}")
     # *---------------------------------#
 
     print("---------------------------------")
@@ -314,7 +330,7 @@ if __name__ == "__main__":
     # * 2. Move the '_FREQ.molden' file to the original folder
 
     # * Run obabel
-    if OPERATING_SYTEM in ("win32","Windows"):
+    if OPERATING_SYTEM in ("win32", "Windows"):
         subprocess.run(
             [
                 obabel,
@@ -343,7 +359,7 @@ if __name__ == "__main__":
                 f"{namespace}_FREQ.molden",
             ],
             stdout=subprocess.PIPE,
-            check=True
+            check=True,
         )
 
     if not os.path.isfile(f"{namespace}.xtbopt.trj.xyz"):
@@ -388,7 +404,7 @@ if __name__ == "__main__":
         print("----------------------------------------------")
 
         # * Run obabel
-        if OPERATING_SYTEM in ("win32","Windows"):
+        if OPERATING_SYTEM in ("win32", "Windows"):
             subprocess.run(
                 [
                     obabel,
@@ -417,7 +433,7 @@ if __name__ == "__main__":
                     f"{namespace}_tinker.xyz",
                 ],
                 stdout=subprocess.PIPE,
-                check=True
+                check=True,
             )
         print("------------------------------------")
         print("*  Conversion to chem3d format done  *")
