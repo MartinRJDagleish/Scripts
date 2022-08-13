@@ -4,7 +4,7 @@
 """
 Author: Martin Dagleish (MRJD)
 
-Version 0.2.2
+Version 0.2.3
 
 This script is used to run the ORCA program.
 
@@ -31,13 +31,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-# * Changelog:
+# * Changelog
+# * 0.2.3 - Added option to copy multiple xyz files to temp1 if wanted. 
 # * 0.2.2 - Prettified printing of ORCA output.
 # * 0.2.1 - Path slashes wrong for Linux
 # * 0.2.0 - Fixed Linux not working as stdout has to be written via python and not ">" 
 # * 0.1.0 - Initial release
 
-VERSION = "0.2.2"
+VERSION = "0.2.3"
 
 import os
 import sys
@@ -94,7 +95,9 @@ orca_parser.add_argument(
     "--xyz",  #! Positional argument
     metavar="XYZ-FILE",
     type=str,
-    help="The xyz-file to copy in temp1 (temporary folder for calculations).",
+    nargs='*', # * = 0 or more arguments
+    help="The xyz-file(s) to copy in temp1 (temporary folder for calculations). \
+        Give a space separated list of xyz-files. E.g. --xyz xyz1.xyz xyz2.xyz"
 )
 
 #! Possible future options:
@@ -134,7 +137,8 @@ orca_parser.add_argument(
 
 # * Execute the parse_args() method
 args = orca_parser.parse_args()
-
+print(args)
+print(args.xyz)
 #! Run the calculation, acutal programm:
 if __name__ == "__main__":
     cwd = os.getcwd()
@@ -156,21 +160,23 @@ if __name__ == "__main__":
     if OPERATING_SYTEM == "win32":
         os.system(f"copy {input_file} {temp1_path}")
         if args.xyz:
-            xyz_file = [args.xyz if args.xyz.endswith(".xyz") else args.xyz + ".xyz"][0]
-            if os.path.isfile(os.path.join(cwd, xyz_file)):
-                os.system(f"copy {xyz_file} {temp1_path}")
-            else:
-                print(f"{xyz_file} not found in {cwd}")
-                sys.exit(1)
+            xyz_files = [xyz if xyz.endswith(".xyz") else xyz + ".xyz" for xyz in args.xyz]
+            for xyz_file in xyz_files:
+                if os.path.isfile(os.path.join(cwd, xyz_file)):
+                    os.system(f"copy {xyz_file} {temp1_path}")
+                else:
+                    print(f"{xyz_file} not found in {cwd}")
+                    sys.exit(1)
     else:
         os.system(f"cp {input_file} {temp1_path}")
         if args.xyz:
-            xyz_file = [args.xyz if args.xyz.endswith(".xyz") else args.xyz + ".xyz"][0]
-            if os.path.isfile(os.path.join(cwd, xyz_file)):
-                os.system(f"cp {xyz_file} {temp1_path}")
-            else:
-                print(f"{xyz_file} not found in {cwd}")
-                sys.exit(1)
+            xyz_files = [xyz if xyz.endswith(".xyz") else xyz + ".xyz" for xyz in args.xyz]
+            for xyz_file in xyz_files:
+                if os.path.isfile(os.path.join(cwd, xyz_file)):
+                    os.system(f"cp {xyz_file} {temp1_path}")
+                else:
+                    print(f"{xyz_file} not found in {cwd}")
+                    sys.exit(1)
 
     os.chdir(temp1_path)
 
