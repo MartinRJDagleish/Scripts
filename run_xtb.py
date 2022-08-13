@@ -4,7 +4,7 @@
 """
 Author: Martin Dagleish (MRJD)
 
-Version 0.4.7
+Version 0.4.8
 
 This script is used to run the XTB program and convert the
 output .g98 to .molden format in order to process the output in ChemCraft.
@@ -33,8 +33,9 @@ SOFTWARE.
 """
 
 # * Changelog:
+# * 0.4.8 - Added possibility to until run hess without opt and actual center string.
 # * 0.4.7 - Added version info to script
-# * 0.4.6 - Fixed Linux not working as stdout has to be written via python and not ">" 
+# * 0.4.6 - Fixed Linux not working as stdout has to be written via python and not ">"
 # * 0.4.5 - Added os.path.basename(xyz_file) to get the name of the xyz file and removing
 # *         any autocomplete characters from the name.
 # * 0.4.4 - try-except for installation of xtb and obabel if not found
@@ -52,10 +53,14 @@ SOFTWARE.
 # *       This is easier to use and more flexible.
 # * 0.1.0 - Initial release
 
-VERSION = "0.4.7"
+VERSION = "0.4.8"
 
 import os
 import sys
+
+from rich import inspect
+
+# * for debugging
 
 try:
     import argparse
@@ -67,6 +72,7 @@ try:
 except ImportError:
     print("Please install subprocess. Via pip install subprocess")
     sys.exit()
+
 
 #!##############################################################################
 #!                                 PART 1                                      #
@@ -116,7 +122,7 @@ except subprocess.CalledProcessError:
     print(
         "obabel not found. Please install OpenBabel and make sure it is added to PATH."
     )
-    sys.exit()
+    sys.exit(1)
 
 
 #!##############################################################################
@@ -129,18 +135,14 @@ xtb_parser = argparse.ArgumentParser(
     prog="run_xtb.py",
     usage="%(prog)s xyz_file [options]",
     description=f"Run a XTB calculation for a given xyz file. \
-        Optimization and frequency calculations are done per default. -> Script Version {VERSION}"
+        Optimization and frequency calculations are done per default. -> Script Version {VERSION}",
 )
-
 xtb_parser.add_argument(
     "xyz_file",  #! Positional argument
     metavar="xyz_file",
     type=str,
     help="The xyz file to run the calculation on. Add .xyz extension to name (e.g. my_mol.xyz)",
 )
-# xtb_parser.add_argument('--ohess',              #! Optional argument
-#                         action="store_true",
-#                         help='Optimize the geometry and calculate the Hessian')
 xtb_parser.add_argument(
     "-c",
     "--chrg",  #! Optional argument
@@ -189,6 +191,12 @@ xtb_parser.add_argument(
           cs2, dioxane, dmf, dmso, ether, ethylacetate, furane, hexandecane,\
           hexane, methanol, nitromethane, octanol, woctanol, phenol, toluene, \
           thf, water. (ALPB methode)",
+)
+xtb_parser.add_argument(
+    "--hess",
+    action="store_true",
+    default=False,
+    help="If you only want to run the frequency calculation without optimization.",
 )
 xtb_parser.add_argument(
     "--chem3d",
@@ -242,6 +250,7 @@ def get_solvent(solvent_user_inp):
 
 # * Execute the parse_args() method
 args = xtb_parser.parse_args()
+# print(inspect(args)) #* for debugging
 
 #! Run the calculation, acutal programm:
 if __name__ == "__main__":
@@ -250,27 +259,18 @@ if __name__ == "__main__":
 
     # * Gather the options for the calculation
     options = []
-    if args.chrg:
-        options.append("--chrg")
-        options.append(str(args.chrg))
+    if args.hess:
+        options.append("--hess")
     else:
-        options.append("--chrg")
-        options.append("0")
+        options.append("--ohess")
+    if args.chrg:
+        options.append("--chrg " + str(args.chrg))
+    else:
+        options.append("--chrg 0")
 
     if args.parallel > 1:
-        options.append("--parallel")
-        options.append(str(args.parallel))
-
-    if args.namespace:
-        namespace = args.namespace
-        options.append("--namespace")
-        options.append(args.namespace)
-    else:
-        namespace = os.path.splitext(os.path.basename(xyz_file))[0]
-        options.append("--namespace")
-        options.append(namespace)
-        # options.append(f" > {namespace}.out") #? Old version
-
+        options.append("--parallel " + str(args.parallel))
+        
     if args.verbose:
         options.append("--verbose")
 
@@ -291,7 +291,17 @@ if __name__ == "__main__":
             print(
                 f"The solvent '{args.solvent}' is not supported.\nPossible solvents are:\n\n {', '.join(solvent_dict.keys())}"
             )
-            sys.exit()
+            sys.exit(1)
+
+    if args.namespace:
+        namespace = args.namespace
+        options.append("--namespace")
+        options.append(namespace) #* this has to be a new entry
+    else:
+        namespace = os.path.splitext(os.path.basename(xyz_file))[0]
+        options.append("--namespace")
+        options.append(namespace) #* this has to be a new entry
+        # options.append(f" > {namespace}.out") #? Old version
 
     # * mkdir temp1 folder for xtb files
     temp1_path = os.path.join(cwd, "temp1")
@@ -312,18 +322,17 @@ if __name__ == "__main__":
     # *---------------------------------#
     with open(f"{namespace}.out", "w", encoding="utf-8") as out:
         xtb_output = subprocess.run(
-            [f"{xtb}", f"{xyz_file}", "--ohess", *options],
+            [f"{xtb}", f"{xyz_file}", *options],
             stdout=out,
             check=True,
             text=True
         )
-
     # os.system(f"{xtb} {xyz_file} --ohess {' '.join(options)}")
     # *---------------------------------#
 
-    print("---------------------------------")
-    print("*      XTB RUN SUCCESSFUL!      *")
-    print("---------------------------------")
+    print(35*"-")
+    print("*"+"XTB RUN FINISHED!".center(33," ")+"*")
+    print(35*"-")
 
     # * End of job
     # * 1. Run obabel to convert the output to .molden format
@@ -394,14 +403,14 @@ if __name__ == "__main__":
         for cmd in copy_cmds:
             subprocess.run(cmd, stdout=subprocess.PIPE, check=True)
 
-    print("------------------------------------")
-    print("*  Importants files copied to CWD  *")
-    print("------------------------------------")
+    print(35*"-")
+    print("*"+"Importants files copied to CWD".center(33," ")+"*")
+    print(35*"-")
 
     if args.chem3d:
-        print("----------------------------------------------")
-        print("*  Converting to chem3d format (tinker.xyz)  *")
-        print("----------------------------------------------")
+        print(45*"-")
+        print("*"+"Converting to chem3d format (tinker.xyz)".center(43," ")+"*")
+        print(45*"-")
 
         # * Run obabel
         if OPERATING_SYTEM in ("win32", "Windows"):
@@ -435,6 +444,7 @@ if __name__ == "__main__":
                 stdout=subprocess.PIPE,
                 check=True,
             )
-        print("------------------------------------")
-        print("*  Conversion to chem3d format done  *")
-        print("------------------------------------")
+            
+        print(45*"-")
+        print("*"+"Conversion to chem3d format done".center(43," ")+"*")
+        print(45*"-")
