@@ -4,7 +4,7 @@
 """
 Author: Martin Dagleish (MRJD)
 
-Version 0.2.3
+Version 0.2.4
 
 This script is used to run the ORCA program.
 
@@ -32,13 +32,14 @@ SOFTWARE.
 """
 
 # * Changelog
-# * 0.2.3 - Added option to copy multiple xyz files to temp1 if wanted. 
+# * 0.2.4 - Switched os.system for subprocess.run in script and updated Windows 
+# * 0.2.3 - Added option to copy multiple xyz files to temp1 if wanted.
 # * 0.2.2 - Prettified printing of ORCA output.
 # * 0.2.1 - Path slashes wrong for Linux
-# * 0.2.0 - Fixed Linux not working as stdout has to be written via python and not ">" 
+# * 0.2.0 - Fixed Linux not working as stdout has to be written via python and not ">"
 # * 0.1.0 - Initial release
 
-VERSION = "0.2.3"
+VERSION = "0.2.4"
 
 import os
 import sys
@@ -95,9 +96,9 @@ orca_parser.add_argument(
     "--xyz",  #! Positional argument
     metavar="XYZ-FILE",
     type=str,
-    nargs='*', # * = 0 or more arguments
+    nargs="*",  # * = 0 or more arguments
     help="The xyz-file(s) to copy in temp1 (temporary folder for calculations). \
-        Give a space separated list of xyz-files. E.g. --xyz xyz1.xyz xyz2.xyz"
+        Give a space separated list of xyz-files. E.g. --xyz xyz1.xyz xyz2.xyz",
 )
 
 #! Possible future options:
@@ -109,45 +110,18 @@ orca_parser.add_argument(
 # )
 
 
-# solvent_dict = {
-#     "acetonitrile": ["acetonitrile", "ACN", "Acetonitrile", "Acetonitril", "AcN"],
-#     "aniline": ["aniline", "ANI", "Aniline", "Anil"],
-#     "benzaldehyde": ["benzaldehyde", "BEN", "Benzaldehyde", "Benzal", "Benzaldehyd"],
-#     "benzene": ["benzene", "Benzene", "Benzol"],
-#     "ch2cl2": ["ch2cl2", "CH2CL2", "DCM", "Dichloromethane", "Dichlormethan"],
-#     "chcl3": ["chcl3", "CHCL3", "Chloroform", "Chloroforme", "chloroform"],
-#     "cs2": ["cs2", "CS2", "Carbonsulfide", "Carbonsulfid", "carbonsulfide"],
-#     "dioxane": ["dioxane", "Dioxane", "Dioxal"],
-#     "dmf": ["dmf", "DMF", "Dimethylformamide", "Dimethylformamid", "dimethylformamide"],
-#     "dmso": ["dmso", "DMSO", "Me2SO"],
-#     "ether": ["ether", "ETHER", "Ether"],
-#     "ethylacetate": ["ethylacetate", "ETAC", "Ethylacetat", "Ethylacetate"],
-#     "furane": ["furane", "FUR", "Furan"],
-#     "hexandecane": ["hexandecane", "HEX", "Hexandecane"],
-#     "hexane": ["hexane", "HEX", "Hexane", "Hexan"],
-#     "methanol": ["methanol", "METH", "Methanol"],
-#     "nitromethane": ["nitromethane", "NIT", "Nitromethane", "Nitromethan"],
-#     "octanol": ["octanol", "OCT", "Oct-OH"],
-#     "woctanol": ["woctanol", "WOCT", "Water octanol", "Wasser_Octanol"],
-#     "phenol": ["phenol", "PHEN", "Phenol"],
-#     "toluene": ["toluene", "TOL", "Toluene", "Toluol"],
-#     "thf": ["thf", "THF", "Tetrahydrofuran", "tetrahydrofurane"],
-#     "water": ["water", "WAT", "Water", "Wasser", "H2O", "h2o"],
-# }
-
 # * Execute the parse_args() method
 args = orca_parser.parse_args()
-print(args)
-print(args.xyz)
+
 #! Run the calculation, acutal programm:
 if __name__ == "__main__":
     cwd = os.getcwd()
 
     input_file = args.input_file
-    if input_file.endswith(".inp"):
-        pass
-    else:
+    print(input_file)
+    if not input_file.endswith(".inp"):
         input_file += ".inp"
+    print(input_file)
 
     namespace = os.path.splitext(input_file)[0]
 
@@ -158,22 +132,38 @@ if __name__ == "__main__":
 
     # * copy .xyz file to temp1 folder
     if OPERATING_SYTEM == "win32":
-        os.system(f"copy {input_file} {temp1_path}")
+        print(temp1_path)
+        subprocess.run(
+            ["copy", input_file, temp1_path], stdout=subprocess.PIPE, check=True, shell=True
+        )
         if args.xyz:
-            xyz_files = [xyz if xyz.endswith(".xyz") else xyz + ".xyz" for xyz in args.xyz]
+            xyz_files = [
+                xyz if xyz.endswith(".xyz") else xyz + ".xyz" for xyz in args.xyz
+            ]
             for xyz_file in xyz_files:
                 if os.path.isfile(os.path.join(cwd, xyz_file)):
-                    os.system(f"copy {xyz_file} {temp1_path}")
+                    subprocess.run(
+                        ["copy", xyz_file, temp1_path],
+                        stdout=subprocess.PIPE,
+                        check=True,
+                        shell=True
+                    )
                 else:
                     print(f"{xyz_file} not found in {cwd}")
                     sys.exit(1)
     else:
-        os.system(f"cp {input_file} {temp1_path}")
+        subprocess.run(
+            ["cp", input_file, temp1_path], stdout=subprocess.PIPE, check=True
+        )
         if args.xyz:
-            xyz_files = [xyz if xyz.endswith(".xyz") else xyz + ".xyz" for xyz in args.xyz]
+            xyz_files = [
+                xyz if xyz.endswith(".xyz") else xyz + ".xyz" for xyz in args.xyz
+            ]
             for xyz_file in xyz_files:
                 if os.path.isfile(os.path.join(cwd, xyz_file)):
-                    os.system(f"cp {xyz_file} {temp1_path}")
+                    subprocess.run(
+                        ["cp", xyz_file, temp1_path], stdout=subprocess.PIPE, check=True
+                    )
                 else:
                     print(f"{xyz_file} not found in {cwd}")
                     sys.exit(1)
@@ -184,24 +174,20 @@ if __name__ == "__main__":
     # * Run the calculation
     if OPERATING_SYTEM in ("win32", "Windows"):
         subprocess.run(
-            ["start", "/b", f"{ORCA_PATH}", input_file, ">", f"{namespace}.out"],
+            # ["start", "/b", f"{ORCA_PATH}", input_file, ">", f"{namespace}.out"],
+            [f"{ORCA_PATH}", input_file, ">", f"{namespace}.out"],
             stdout=subprocess.PIPE,
             shell=True,
             check=True
         )
     elif OPERATING_SYTEM in ("linux", "Linux", "Darwin"):
         with open(f"{namespace}.out", "w", encoding="utf-8") as out:
-            subprocess.run(
-                [f"{ORCA_PATH}", input_file],
-                stdout=out,
-                shell=False,
-                check=True
-            )
+            subprocess.run([f"{ORCA_PATH}", input_file], stdout=out, check=True)
     # *---------------------------------#
 
-    print("\n"+40*"-")
-    print("*" + "ORCA RUN FINISHED!".center(38,' ') + "*")
-    print(40*"-")
+    print("\n" + 40 * "-")
+    print("*" + "ORCA RUN FINISHED!".center(38, " ") + "*")
+    print(40 * "-")
 
     os.chdir("..")
     if OPERATING_SYTEM in ("win32", "Windows"):
@@ -209,15 +195,15 @@ if __name__ == "__main__":
             ["copy", f"{temp1_path}\\{namespace}.out", cwd],
             stdout=subprocess.PIPE,
             shell=True,
-            check=True,
+            check=True
         )
     elif OPERATING_SYTEM in ("linux", "Linux", "Darwin"):
         subprocess.run(
             ["cp", f"{temp1_path}/{namespace}.out", cwd],
             stdout=subprocess.PIPE,
-            check=True,
+            check=True
         )
 
-    print(40*"-")
-    print("*" + "Output copied to CWD".center(38,' ') + "*")
-    print(40*"-")
+    print(40 * "-")
+    print("*" + "Output copied to CWD".center(38, " ") + "*")
+    print(40 * "-")
