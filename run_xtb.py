@@ -4,7 +4,7 @@
 """
 Author: Martin Dagleish (MRJD)
 
-Version 0.4.8
+Version 0.4.9
 
 This script is used to run the XTB program and convert the
 output .g98 to .molden format in order to process the output in ChemCraft.
@@ -33,6 +33,7 @@ SOFTWARE.
 """
 
 # * Changelog:
+# * 0.4.9 - Added UHF option to script.
 # * 0.4.8 - Added possibility to until run hess without opt and actual center string.
 # * 0.4.7 - Added version info to script
 # * 0.4.6 - Fixed Linux not working as stdout has to be written via python and not ">"
@@ -53,12 +54,12 @@ SOFTWARE.
 # *       This is easier to use and more flexible.
 # * 0.1.0 - Initial release
 
-VERSION = "0.4.8"
+VERSION = "0.4.9"
 
 import os
 import sys
 
-from rich import inspect
+# from rich import inspect
 
 # * for debugging
 
@@ -194,9 +195,16 @@ xtb_parser.add_argument(
 )
 xtb_parser.add_argument(
     "--hess",
+    "--freq",
     action="store_true",
     default=False,
     help="If you only want to run the frequency calculation without optimization.",
+)
+xtb_parser.add_argument(
+    "--uhf", 
+    type=int,
+    metavar="MULT",
+    help="If you want to run in unrestricted Hartree Fock mode to account for non-Singulett states."
 )
 xtb_parser.add_argument(
     "--chem3d",
@@ -292,6 +300,10 @@ if __name__ == "__main__":
                 f"The solvent '{args.solvent}' is not supported.\nPossible solvents are:\n\n {', '.join(solvent_dict.keys())}"
             )
             sys.exit(1)
+
+    if args.uhf:
+        multip = args.uhf 
+        options.append(f"--uhf {multip}")
 
     if args.namespace:
         namespace = args.namespace
