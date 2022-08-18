@@ -41,10 +41,19 @@ import os
 #TODO:
 #? 1. Add file extension to the end of the file name
 #? 2. use "os.walk" to walk through the directories and subdirectories to rename files and directories
-#? 3. 
+#? 3. use option "topdown=False" for "os.walk" because I need to rename the directories from the bottom up 
+#? otherwise I'll create non-existent directories and files 
+
+
+
+#* -> split name and check if last is exactly 32 characters long if yes then remove it else leave name 
+
 
 def batch_rename_remove_end(path, files_dir_chc):
     cwd = path if os.path.isdir(path) else os.path.dirname(path)
+    # for root, dirs, files in os.walk(cwd):
+
+
     files = [
         filename
         for filename in os.listdir(cwd)
