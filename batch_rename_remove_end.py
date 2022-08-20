@@ -38,64 +38,132 @@ SOFTWARE.
 
 import os
 
-#TODO:
-#? 1. Add file extension to the end of the file name
-#? 2. use "os.walk" to walk through the directories and subdirectories to rename files and directories
-#? 3. use option "topdown=False" for "os.walk" because I need to rename the directories from the bottom up 
-#? otherwise I'll create non-existent directories and files 
+# TODO:
+# ? 1. Add file extension to the end of the file name
+# ? 2. use "os.walk" to walk through the directories and subdirectories to rename files and directories
+# ? 3. use option "topdown=False" for "os.walk" because I need to rename the directories from the bottom up
+# ? otherwise I'll create non-existent directories and files
+
+# * -> split name and check if last is exactly 32 characters long if yes then remove it else leave name
 
 
+def rename_filenames_func(name):
+    name, ext = os.path.splitext(name)
+    name_splt_lst = name.split(" ")
+    if len(name_splt_lst) > 1 and len(name_splt_lst[-1]) == 32:
+        name_splt_lst.pop(-1)
+    return " ".join(name_splt_lst) + ext
 
-#* -> split name and check if last is exactly 32 characters long if yes then remove it else leave name 
+
+def rename_dirnames_func(name):
+    name_splt_lst = name.split(" ")
+    if len(name_splt_lst) > 1 and len(name_splt_lst[-1]) == 32:
+        name_splt_lst.pop(-1)
+    return " ".join(name_splt_lst)
 
 
-def batch_rename_remove_end(path, files_dir_chc):
-    cwd = path if os.path.isdir(path) else os.path.dirname(path)
-    # for root, dirs, files in os.walk(cwd):
+def uniquify(path):
+    filename, ext = os.path.splitext(path)
+    counter = 1
+
+    while os.path.exists(path):
+        path = filename + f"_{counter}" + ext
+        counter += 1
+
+    return path
 
 
-    files = [
-        filename
-        for filename in os.listdir(cwd)
-        if os.path.isfile(os.path.join(cwd, filename))
-    ]
-    dirs = [
-        dirname
-        for dirname in os.listdir(cwd)
-        if os.path.isdir(os.path.join(cwd, dirname))
-    ]
-
-    if files_dir_chc == "f":
+def os_walk_func(path):
+    # cwd = path if os.path.isdir(path) else os.path.dirname(path)
+    for root, dirs, files in os.walk(cwd, topdown=False):
+        # print("Root: " + root)
+        # for filename in files:
+        #     print("File: " + filename)
+        # for dirname in dirs:
+        #     print("Dir: " + dirname)
+        # * 1. Change filenames
         for filename in files:
-            ext = os.path.splitext(filename)[1]
-            new_filename_lst = filename.split(" ")[:-1]
-            new_filename = " ".join(new_filename_lst) + ext
-            os.rename(os.path.join(cwd, filename), os.path.join(cwd, new_filename))
-    elif files_dir_chc == "d":
+            new_filename = rename_filenames_func(filename)
+            new_filename = uniquify(os.path.join(root, new_filename))
+            os.rename(os.path.join(root, filename), os.path.join(root, new_filename))
+            print(f"Renaming {filename} to {new_filename}")
+        # * 2. Change dirnames
         for dirname in dirs:
-            new_dirname_lst = dirname.split(" ")[:-1]
-            new_dirname = " ".join(new_dirname_lst)
-            os.rename(os.path.join(cwd, dirname), os.path.join(cwd, new_dirname))
-    elif files_dir_chc in ("fd","df"):
-        for filename in files:
-            new_filename_lst = filename.split(" ")[:-1]
-            new_filename = " ".join(new_filename_lst)
-            os.rename(os.path.join(cwd, filename), os.path.join(cwd, new_filename))
-        for dirname in dirs:
-            new_dirname_lst = dirname.split(" ")[:-1]
-            new_dirname = " ".join(new_dirname_lst)
-            os.rename(os.path.join(cwd, dirname), os.path.join(cwd, new_dirname))
-    else:
-        print("Invalid choice!")
+            new_dirname = rename_dirnames_func(dirname)
+            new_dirname = uniquify(os.path.join(root, new_dirname))
+            os.rename(os.path.join(root, dirname), os.path.join(root, new_dirname))
+            print(f"Renaming {dirname} to {new_dirname}")
+        # #* 3. Change root -> DO NOT change root -> dirnames will change all of them already
+        # new_rootname = rename_dirnames_func(root)
+        # os.rename(root, new_rootname)
+        # print(root, dirs, files)
+        # for dirname in dirs:
+        #     for filename in files:
+        #         print(os.path.join(dir,file))
 
 
 if __name__ == "__main__":
-    pwd_choice = input("Where do you want to run the script? (. for cwd)")
-    files_dir_choice = input("Do you want to rename files or directories? (f/d/fd): ")
+    cwd = os.getcwd()
+    os_walk_func(cwd)
 
-    if pwd_choice == ".":
-        path = os.getcwd()
-    else:
-        path = pwd_choice
 
-    batch_rename_remove_end(path, files_dir_choice)
+# *------------------------------------------------------------------------------------------------------------
+
+# def pwd_choice_func():
+#     pwd_choice = input("Where do you want to run the script? (. for cwd)")
+#     if pwd_choice == ".":
+#         pwd = os.getcwd()
+#     else:
+#         pwd = pwd_choice
+#     return pwd
+
+
+# files = [
+#     filename
+#     for filename in os.listdir(cwd)
+#     if os.path.isfile(os.path.join(cwd, filename))
+# ]
+# dirs = [
+#     dirname
+#     for dirname in os.listdir(cwd)
+#     if os.path.isdir(os.path.join(cwd, dirname))
+# ]
+
+# for filename in files:
+#     ext = os.path.splitext(filename)[1]
+#     new_filename_lst = filename.split(" ")[:-1]
+#     new_filename = " ".join(new_filename_lst) + ext
+#     os.rename(os.path.join(cwd, filename), os.path.join(cwd, new_filename))
+# for dirname in dirs:
+#     new_dirname_lst = dirname.split(" ")[:-1]
+#     new_dirname = " ".join(new_dirname_lst)
+#     os.rename(os.path.join(cwd, dirname), os.path.join(cwd, new_dirname))
+# for filename in files:
+#     new_filename_lst = filename.split(" ")[:-1]
+#     new_filename = " ".join(new_filename_lst)
+#     os.rename(os.path.join(cwd, filename), os.path.join(cwd, new_filename))
+# for dirname in dirs:
+#     new_dirname_lst = dirname.split(" ")[:-1]
+#     new_dirname = " ".join(new_dirname_lst)
+#     os.rename(os.path.join(cwd, dirname), os.path.join(cwd, new_dirname))
+
+
+# if __name__ == "__main__":
+#     path = pwd_choice_func()
+# while True:
+#     files_dir_choice = input("Do you want to rename files or directories? (f/d/fd): ")
+#     if files_dir_choice == "f":
+#         # -> files function
+#         break
+#     elif files_dir_choice == "d":
+#         # -> dir function
+#         break
+#     elif files_dir_choice in ("fd","df"):
+#         # -> files function and then dir function
+#         break
+#     else:
+#         print("Invalid choice! Try: f/d/fd")
+# batch_rename_remove_end(path, files_dir_choice)
+
+
+# batch_rename_remove_end(path, files_dir_choice)
