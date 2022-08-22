@@ -1,3 +1,41 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+Author: Martin Dagleish (MRJD)
+
+Version 0.1.0
+
+Get the atomic number from the symbol and vice versa.
+
+MIT License
+
+Copyright (c) 2022 Martin Dagleish
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+
+# * Changelog
+# * 0.1.0 - Initial release
+
+VERSION = "0.2.4"
+
 atom_dict = {
         1: "H",    2: "He",
         3: "Li",   4: "Be",  5: "B",   6: "C",   7: "N",   8: "O",   9: "F",   10: "Ne",
@@ -25,7 +63,7 @@ def convert_zvals_to_symbols(z_val):
     return atom_dict.get(z_val)
 
 while True:
-    choice = input("1) No. -> Symbol 2) Symbol -> No. Choose 1 or 2.\n")
+    choice = input("1) No. -> Symbol 2) Symbol -> No. Choose 1 or 2. ")
     if not choice.isnumeric():
         print("Enter 1 or 2.\n")
     else:
@@ -34,14 +72,15 @@ while True:
 
 if choice == 1:
     while True:
-        user_input = input("Input the atomic number of the element:\n")
+        user_input = input("\n  Input the atomic number of the element: ")
         if not user_input.isnumeric():
-            print("Enter a valid number between 1 und 118.\n")
+            print("    Enter a valid number between 1 und 118.\n")
         elif not 1 <= int(user_input) <= 118:
-            print("The number exceeds valid atomic numbers.")
+            print("    The number exceeds valid atomic numbers.")
         else:
+            user_input = int(user_input)
             break
-    print(f"\nThe symbol for {user_input} is:", convert_zvals_to_symbols(int(user_input)))
+    print(f"\n  The symbol for {user_input} is:", convert_zvals_to_symbols(user_input))
 else:
     while True:
         user_input = input("Input the symbol of the element:\n")

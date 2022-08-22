@@ -118,10 +118,8 @@ if __name__ == "__main__":
     cwd = os.getcwd()
 
     input_file = args.input_file
-    print(input_file)
     if not input_file.endswith(".inp"):
         input_file += ".inp"
-    print(input_file)
 
     namespace = os.path.splitext(input_file)[0]
 
@@ -132,7 +130,6 @@ if __name__ == "__main__":
 
     # * copy .xyz file to temp1 folder
     if OPERATING_SYTEM == "win32":
-        print(temp1_path)
         subprocess.run(
             ["copy", input_file, temp1_path], stdout=subprocess.PIPE, check=True, shell=True
         )

@@ -1,13 +1,12 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # plot the orbital compositions casscf
 # written and maintained by Nico Spiller ( spiller@kofo.mpg.de )
 
 # =============================================================================
-# modified by MRJD on 2020-08-10
+# modified by MRJD on 2020-08-22
 # =============================================================================
 import re
 
-import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 
