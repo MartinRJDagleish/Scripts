@@ -34,7 +34,7 @@ SOFTWARE.
 # * Changelog
 # * 0.1.0 - Initial release
 
-VERSION = "0.2.4"
+VERSION = "0.1.0"
 
 atom_dict = {
         1: "H",    2: "He",
@@ -62,6 +62,17 @@ def convert_symbols_to_zvals(symbol):
 def convert_zvals_to_symbols(z_val):
     return atom_dict.get(z_val)
 
+class bcolors:
+    HEADER = "\033[95m"
+    OKBLUE = "\033[94m"
+    OKGREEN = "\033[92m"
+    WARNING = "\033[93m"
+    FAIL = "\033[91m"
+    ENDC = "\033[0m"
+    BOLD = "\033[1m"
+    UNDERLINE = "\033[4m"
+
+
 while True:
     choice = input("1) No. -> Symbol 2) Symbol -> No. Choose 1 or 2. ")
     if not choice.isnumeric():
@@ -78,14 +89,14 @@ if choice == 1:
         elif not 1 <= int(user_input) <= 118:
             print("    The number exceeds valid atomic numbers.")
         else:
-            user_input = int(user_input)
             break
-    print(f"\n  The symbol for {user_input} is:", convert_zvals_to_symbols(user_input))
+    print(f"\n  The symbol for {bcolors.OKBLUE + user_input + bcolors.ENDC} is:{bcolors.OKBLUE}", convert_zvals_to_symbols(int(user_input)), bcolors.ENDC)
 else:
     while True:
-        user_input = input("Input the symbol of the element:\n")
+        user_input = input("\n  Input the symbol of the element: ")
         if not user_input.isalpha() and len(user_input.strip()) > 2:
-            print("Enter a valid element symbol.\n")
+            print("    Enter a valid element symbol.\n")
         else:
+            user_input = user_input.strip()
             break
-    print(f"\nThe number for {user_input} is:", convert_symbols_to_zvals(user_input.strip()))
+    print(f"\n  The number for {bcolors.OKBLUE + user_input + bcolors.ENDC} is:{bcolors.OKBLUE}", convert_symbols_to_zvals(user_input), bcolors.ENDC)
