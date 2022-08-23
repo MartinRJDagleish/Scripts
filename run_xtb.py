@@ -4,7 +4,7 @@
 """
 Author: Martin Dagleish (MRJD)
 
-Version 0.4.9
+Version 0.4.10
 
 This script is used to run the XTB program and convert the
 output .g98 to .molden format in order to process the output in ChemCraft.
@@ -33,6 +33,7 @@ SOFTWARE.
 """
 
 # * Changelog:
+# * 0.4.10 - Added ESP option to script. (Visualization is not known yet -> potentially openbabel usage needed) 
 # * 0.4.9 - Added UHF option to script.
 # * 0.4.8 - Added possibility to until run hess without opt and actual center string.
 # * 0.4.7 - Added version info to script
@@ -54,14 +55,14 @@ SOFTWARE.
 # *       This is easier to use and more flexible.
 # * 0.1.0 - Initial release
 
-VERSION = "0.4.9"
+VERSION = "0.4.10"
 
 import os
 import sys
 
 # from rich import inspect
 
-# * for debugging
+# * ↑ for debugging
 
 try:
     import argparse
@@ -98,10 +99,6 @@ try:
             ["where.exe", "xtb"], stdout=subprocess.PIPE, check=True
         ).stdout.decode("utf-8")
         xtb = XTB_PATH.strip()
-    else:
-        print("Is XTB installed on this OS?")
-        print("Make sure XTB is added to path.")
-        sys.exit(1)
 except subprocess.CalledProcessError:
     print("xtb not found. Please install xtb and make sure it is added to PATH.")
     sys.exit(1)
@@ -137,6 +134,7 @@ xtb_parser = argparse.ArgumentParser(
     usage="%(prog)s xyz_file [options]",
     description=f"Run a XTB calculation for a given xyz file. \
         Optimization and frequency calculations are done per default. -> Script Version {VERSION}",
+    # formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
 xtb_parser.add_argument(
     "xyz_file",  #! Positional argument
@@ -145,33 +143,47 @@ xtb_parser.add_argument(
     help="The xyz file to run the calculation on. Add .xyz extension to name (e.g. my_mol.xyz)",
 )
 xtb_parser.add_argument(
+    "--opt",
+    action="store_true",
+    default=False,
+    help="If you only want to run the geometry optimization without frequency analysis / thermochemistry.",
+)
+xtb_parser.add_argument(
+    "--hess",
+    "--freq",
+    action="store_true",
+    default=False,
+    help="If you only want to run the frequency calculation without optimization."
+)
+xtb_parser.add_argument(
     "-c",
     "--chrg",  #! Optional argument
     metavar="charge",
     type=int,
     default="0",
-    help="The charge of the molecule",
+    help="The charge of the molecule. (default: %(default)s)"
 )
 xtb_parser.add_argument(
     "-P",
     "--parallel",  #! Optional argument
     metavar="ncores",
     type=int,
-    default=1,
-    help="Number of cores for parallel calculation",
+    default=3,
+    help="Number of cores for parallel calculation. (default: %(default)s)"
 )
 xtb_parser.add_argument(
     "-n",
     "--namespace",  #! Optional argument
     metavar="Name",
     type=str,
-    help="The name of the calculation",
+    help="The name of the calculation"
 )
 xtb_parser.add_argument(
     "-v",  #! Optional argument
     "--verbose",
     action="store_true",
-    help="Longer output. Default is False",
+    default=False,
+    help="Longer output. (default: %(default)s)"
 )
 xtb_parser.add_argument(
     "-lmo", action="store_true", help="Localization of orbitals."  #! Optional argument
@@ -179,7 +191,7 @@ xtb_parser.add_argument(
 xtb_parser.add_argument(
     "-molden",
     action="store_true",
-    help="Molden output for orbitals.",  #! Optional argument
+    help="Molden output for orbitals."  #! Optional argument
 )
 xtb_parser.add_argument(
     "-s",
@@ -194,13 +206,6 @@ xtb_parser.add_argument(
           thf, water. (ALPB methode)",
 )
 xtb_parser.add_argument(
-    "--hess",
-    "--freq",
-    action="store_true",
-    default=False,
-    help="If you only want to run the frequency calculation without optimization.",
-)
-xtb_parser.add_argument(
     "--uhf", 
     type=int,
     metavar="MULT",
@@ -210,6 +215,11 @@ xtb_parser.add_argument(
     "--chem3d",
     action="store_true",
     help="If you want to use the Chem3D to view the resulting xyz. (Tinker xyz)",
+)
+xtb_parser.add_argument(
+    "--esp",
+    action="store_true",
+    help="Calculate the electrostatic potential on VdW-grid."
 )
 #! Possible future options:
 # xtb_parser.add_argument(
@@ -269,8 +279,11 @@ if __name__ == "__main__":
     options = []
     if args.hess:
         options.append("--hess")
+    elif args.opt:
+        options.append("--opt")
     else:
         options.append("--ohess")
+
     if args.chrg:
         options.append("--chrg " + str(args.chrg))
     else:
@@ -278,7 +291,7 @@ if __name__ == "__main__":
 
     if args.parallel > 1:
         options.append("--parallel " + str(args.parallel))
-        
+
     if args.verbose:
         options.append("--verbose")
 
@@ -287,6 +300,9 @@ if __name__ == "__main__":
 
     if args.molden:
         options.append("--molden")
+
+    if args.esp:
+        options.append("--esp")
 
     if args.solvent:
         try:
@@ -302,7 +318,7 @@ if __name__ == "__main__":
             sys.exit(1)
 
     if args.uhf:
-        multip = args.uhf 
+        multip = args.uhf
         options.append(f"--uhf {multip}")
 
     if args.namespace:
