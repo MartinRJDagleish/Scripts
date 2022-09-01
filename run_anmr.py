@@ -50,7 +50,7 @@ except ImportError:
     print("Please install subprocess. Via pip install subprocess")
     sys.exit(1)
 try:
-    import numpy as np 
+    import numpy as np
 except ImportError:
     print("Please install numpy. Via pip install numpy")
     sys.exit(1)
@@ -60,19 +60,48 @@ except ImportError:
 OPERATING_SYTEM = sys.platform
 
 # * Create the parser
-anmer_parser = argparse.ArgumentParser(
+anmr_parser = argparse.ArgumentParser(
     prog="run_anmr.py",
     usage="%(prog)s input-file [options]",
     description=f"Run an ANMR calculation for a given input file. -> Script Version {VERSION}",
 )
+anmr_parser.add_argument(
+    "namespace",
+    default="anmr",
+    help="Add a name for the calculation. This will be used to name the output files. (w/o the .out) %(default)s",
+)
+anmr_parser.add_argument(
+    "--freq",
+    type=str,
+    default="300",
+    help="Choose the lamor frequency for the appriopiate nucleus for the NMR \
+        calculation to run. Reasonable: 300 (1H), 162 (31P), ... \
+            (default: %(default)s)",
+)
 
 # * Execute the parse_args() method
-args = anmer_parser.parse_args()
+args = anmr_parser.parse_args()
 
+def isfloat(num):
+    """
+    Helper function for checking if a string is a float.
+    """
+    try:
+        float(num)
+        return True
+    except ValueError:
+        return False
 
 #! Run the calculation, acutal programm:
 if __name__ == "__main__":
     cwd = os.getcwd()
+    
+    namespace = args.namespace.split(".")[0]
+        
+    freq = args.freq
+    if not isfloat(freq):
+        print("Please enter a number for the frequency.")
+        sys.exit(1)
 
     # * Check if the input files exists
     if not os.path.exists(os.path.join(cwd,"censo_tmp")):
@@ -80,5 +109,48 @@ if __name__ == "__main__":
               Execute this script from the cwd with the directory containing 'censo_tmp' folder.")
         sys.exit(1)
     
+    os.chdir(os.path.join(cwd,"censo_tmp"))
     
-    
+    # * Run the ANMR calculation
+    print("Starting the ANMR calculation...")
+    print("")
+    with open(f"{args.namespace}_anmr.out", "w", encoding="utf-8") as out:
+        subprocess.run(
+            [
+                "anmr",
+                "--orca",
+                "--plain",
+                # plain: coupling constants are read from the CONFXX/NMR/nmrprop.dat written by CENSO
+                # instead of the output files of the used QM program package,
+                # whose formatting often changes with new versions
+                "-mf",  # mf: use the frequenz in MHz
+                freq,
+                "-mss",  # max spinsystem size
+                "12"
+            ],
+            check=True,
+            stdout=out,
+        )
+
+    data = np.genfromtxt("anmr.dat")
+    THRESHOLD = 0.001
+    data2 = data[np.logical_not(data[:, 1] < THRESHOLD)]
+    data2 = np.insert(data2, 0, (data[0][0], THRESHOLD), axis=0)
+    data2 = np.insert(data2, len(data2), (data[-1][0], THRESHOLD), axis=0)
+    np.savetxt(f"{namespace}_anmr.dat", data2, fmt="%2.5e")
+
+    print("\n" + 40 * "-")
+    print("*" + "ANMR RUN FINISHED!".center(38, " ") + "*")
+    print(40 * "-")
+
+    # * Run ANMR
+    print("Starting the NMRplot plotting...")
+    print("")
+
+    subprocess.run(
+        ["nmrplot.py", "-i", f"{namespace}_anmr.dat", "-o", namespace + "_nmrplot"],
+        check=True,
+    )
+    print("\n" + 40 * "-")
+    print("*" + "PLOTTING DONE!".center(38, " ") + "*")
+    print(40 * "-")
