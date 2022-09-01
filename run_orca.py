@@ -6,7 +6,7 @@ Author: Martin Dagleish (MRJD)
 
 Version 0.2.4
 
-This script is used to run the ORCA program.
+This is a wrapper script for the ORCA programme.
 
 MIT License
 
@@ -48,12 +48,12 @@ try:
     import argparse
 except ImportError:
     print("Please install argparse. Via pip install argparse")
-    sys.exit()
+    sys.exit(1)
 try:
     import subprocess
 except ImportError:
     print("Please install subprocess. Via pip install subprocess")
-    sys.exit()
+    sys.exit(1)
 
 #!##############################################################################
 #!                                 PART 1                                      #

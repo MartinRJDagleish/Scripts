@@ -231,19 +231,22 @@ xtb_parser.add_argument(
 
 
 solvent_dict = {
+    "acetone": ["acetone", "Aceton", "(CH3)2CO"],
     "acetonitrile": ["acetonitrile", "ACN", "Acetonitrile", "Acetonitril", "AcN"],
     "aniline": ["aniline", "ANI", "Aniline", "Anil"],
     "benzaldehyde": ["benzaldehyde", "BEN", "Benzaldehyde", "Benzal", "Benzaldehyd"],
     "benzene": ["benzene", "Benzene", "Benzol"],
     "ch2cl2": ["ch2cl2", "CH2CL2", "DCM", "Dichloromethane", "Dichlormethan"],
     "chcl3": ["chcl3", "CHCL3", "Chloroform", "Chloroforme", "chloroform"],
+    "ccl4": ["ccl4", "CCl4", "Carbontet", "Tetrachlormethan"],
     "cs2": ["cs2", "CS2", "Carbonsulfide", "Carbonsulfid", "carbonsulfide"],
     "dioxane": ["dioxane", "Dioxane", "Dioxal"],
     "dmf": ["dmf", "DMF", "Dimethylformamide", "Dimethylformamid", "dimethylformamide"],
     "dmso": ["dmso", "DMSO", "Me2SO"],
-    "ether": ["ether", "ETHER", "Ether"],
+    "ether": ["ether", "ETHER", "Ether", "diethylether", "Diethylether"],
     "ethylacetate": ["ethylacetate", "ETAC", "Ethylacetat", "Ethylacetate"],
     "furane": ["furane", "FUR", "Furan"],
+    "h2o": ["water", "WAT", "Water", "Wasser", "H2O", "h2o"], #! This was wrong -> "h2o" not "water" 
     "hexandecane": ["hexandecane", "HEX", "Hexandecane"],
     "hexane": ["hexane", "HEX", "Hexane", "Hexan"],
     "methanol": ["methanol", "METH", "Methanol"],
@@ -252,8 +255,7 @@ solvent_dict = {
     "woctanol": ["woctanol", "WOCT", "Water octanol", "Wasser_Octanol"],
     "phenol": ["phenol", "PHEN", "Phenol"],
     "toluene": ["toluene", "TOL", "Toluene", "Toluol"],
-    "thf": ["thf", "THF", "Tetrahydrofuran", "tetrahydrofurane"],
-    "water": ["water", "WAT", "Water", "Wasser", "H2O", "h2o"],
+    "thf": ["thf", "THF", "Tetrahydrofuran", "tetrahydrofurane"]
 }
 
 
