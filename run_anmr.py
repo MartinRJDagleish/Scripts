@@ -132,25 +132,27 @@ if __name__ == "__main__":
             stdout=out,
         )
 
-    data = np.genfromtxt("anmr.dat")
-    THRESHOLD = 0.001
-    data2 = data[np.logical_not(data[:, 1] < THRESHOLD)]
-    data2 = np.insert(data2, 0, (data[0][0], THRESHOLD), axis=0)
-    data2 = np.insert(data2, len(data2), (data[-1][0], THRESHOLD), axis=0)
-    np.savetxt(f"{namespace}_anmr.dat", data2, fmt="%2.5e")
+        data = np.genfromtxt("anmr.dat")
+        THRESHOLD = 0.001
+        data2 = data[np.logical_not(data[:, 1] < THRESHOLD)]
+        data2 = np.insert(data2, 0, (data[0][0], THRESHOLD), axis=0)
+        data2 = np.insert(data2, len(data2), (data[-1][0], THRESHOLD), axis=0)
+        np.savetxt(f"{namespace}_anmr.dat", data2, fmt="%2.5e")
 
     print("\n" + 40 * "-")
     print("*" + "ANMR RUN FINISHED!".center(38, " ") + "*")
     print(40 * "-")
 
-    # * Run ANMR
-    print("Starting the NMRplot plotting...")
-    print("")
+    
 
-    subprocess.run(
-        ["nmrplot.py", "-i", f"{namespace}_anmr.dat", "-o", namespace + "_nmrplot"],
-        check=True,
-    )
-    print("\n" + 40 * "-")
-    print("*" + "PLOTTING DONE!".center(38, " ") + "*")
-    print(40 * "-")
+    # # * Run ANMR
+    # print("Starting the NMRplot plotting...")
+    # print("")
+
+    # subprocess.run(
+    #     ["nmrplot.py", "-i", f"{namespace}_anmr.dat", "-o", namespace + "_nmrplot"],
+    #     check=True,
+    # )
+    # print("\n" + 40 * "-")
+    # print("*" + "PLOTTING DONE!".center(38, " ") + "*")
+    # print(40 * "-")
