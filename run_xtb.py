@@ -4,7 +4,7 @@
 """
 Author: Martin Dagleish (MRJD)
 
-Version 0.4.11
+Version 0.4.12
 
 This script is a wrapper for the XTB programme. It is designed 
 to be a modular and easy to use script for the user. 
@@ -36,6 +36,7 @@ SOFTWARE.
 """
 
 # * Changelog:
+# * 0.4.12 - Minor typos and bug fixes.  
 # * 0.4.11 - Added additional kwargs to pass to xtb (activate with --add) and fixed --opt to work as intended
 # * 0.4.10 - Added ESP option to script. (Visualization is not known yet -> potentially openbabel usage needed)
 # * 0.4.9 - Added UHF option to script.
@@ -59,7 +60,7 @@ SOFTWARE.
 # *       This is easier to use and more flexible.
 # * 0.1.0 - Initial release
 
-VERSION = "0.4.11"
+VERSION = "0.4.12"
 
 import os
 import sys
@@ -72,12 +73,12 @@ try:
     import argparse
 except ImportError:
     print("Please install argparse. Via pip install argparse")
-    sys.exit()
+    sys.exit(1)
 try:
     import subprocess
 except ImportError:
     print("Please install subprocess. Via pip install subprocess")
-    sys.exit()
+    sys.exit(1)
 
 #!##############################################################################
 #!                                 PART 1                                      #
@@ -154,7 +155,6 @@ xtb_parser.add_argument(
     "--hess",
     "--freq",
     action="store_true",
-    default=False,
     help="If you only want to run the frequency calculation without optimization.",
 )
 xtb_parser.add_argument(
@@ -170,7 +170,7 @@ xtb_parser.add_argument(
     "--parallel",  #! Optional argument
     metavar="ncores",
     type=int,
-    default=3,
+    default=4,
     help="Number of cores for parallel calculation. (default: %(default)s)",
 )
 xtb_parser.add_argument(
@@ -205,7 +205,7 @@ xtb_parser.add_argument(
           acetonitrile, aniline, benzaldehyde, benzene, ch2cl2, chcl3, \
           cs2, dioxane, dmf, dmso, ether, ethylacetate, furane, hexandecane,\
           hexane, methanol, nitromethane, octanol, woctanol, phenol, toluene, \
-          thf, water. (ALPB methode)",
+          thf, h2o. (ALPB methode)",
 )
 xtb_parser.add_argument(
     "--uhf",
@@ -340,7 +340,7 @@ if __name__ == "__main__":
 
     if args.uhf:
         multip = args.uhf
-        options.append(f"--uhf")
+        options.append("--uhf")
         options.append(multip)
 
     if args.namespace:
@@ -351,7 +351,6 @@ if __name__ == "__main__":
         namespace = os.path.splitext(os.path.basename(xyz_file))[0]
         options.append("--namespace")
         options.append(namespace)  # * this has to be a new entry
-        # options.append(f" > {namespace}.out") #? Old version
 
     # * mkdir temp1 folder for xtb files
     temp1_path = os.path.join(cwd, "temp1")
