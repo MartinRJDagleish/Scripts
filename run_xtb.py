@@ -6,8 +6,11 @@ Author: Martin Dagleish (MRJD)
 
 Version 0.4.11
 
-This script is used to run the XTB program and convert the
-output .g98 to .molden format in order to process the output in ChemCraft.
+This script is a wrapper for the XTB programme. It is designed 
+to be a modular and easy to use script for the user. 
+The common calculation that is done a geometry optimization and a 
+frequency calculation (kwarg: --ohess). The use can change it though and with the 
+--add keyword additional keywords may be passed to the XTB programme.
 
 MIT License
 
@@ -75,7 +78,6 @@ try:
 except ImportError:
     print("Please install subprocess. Via pip install subprocess")
     sys.exit()
-
 
 #!##############################################################################
 #!                                 PART 1                                      #
