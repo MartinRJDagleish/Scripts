@@ -4,7 +4,7 @@
 """
 Author: Martin Dagleish (MRJD)
 
-Version 0.2.2
+Version 0.2.3
 
 This is a wrapper script for the CENSO programme. 
 
@@ -32,13 +32,14 @@ SOFTWARE.
 """
 
 # * Changelog
+# * 0.2.3 - Fixed the .censorc file writing and added the option to look in crest_tmp for files.  
 # * 0.2.2 - Added postprocess lines for multiline strings and more readable code 
 # * 0.2.1 - Fixed typo and added float checker. 
 # * 0.2.0 - Added nucleus option, writes .censorc and requestes lamor frequency
 # * 0.1.1 - Fixed namespace error
 # * 0.1.0 - Initial release
 
-VERSION = "0.2.2"
+VERSION = "0.2.3"
 
 import os
 import sys
@@ -191,7 +192,7 @@ def isfloat(num):
 # * postprocess the multiline string
 def postprocess_str(multl_str):
     lines = multl_str.split('\n')
-    lines = [line.strip() for line in lines[:-1]]
+    lines = [line.strip()+"\n" for line in lines[:-1]]
     return lines 
 
 #! Run the calculation, acutal programm:
@@ -265,11 +266,14 @@ if __name__ == "__main__":
                 ["mv", filename, censo_path], stdout=subprocess.PIPE, check=True
             )
         else:
-            print(f"File {filename} not found! This may cause errors for CENSO!")
-            raise FileNotFoundError(
-                f"File {filename} not found! This may cause errors for CENSO!"
-            )
-
+            print(f"File {filename} not found! Trying to copy the files from crest_tmp...")
+            if os.path.isfile(os.path.join(cwd, "crest_tmp", filename)):
+                subprocess.run(
+                    ["cp", os.path.join(cwd, "crest_tmp", filename), censo_path], stdout=subprocess.PIPE, check=True
+                )
+            else: 
+                raise ValueError(f"File {filename} not found!")
+                
     os.chdir(censo_path)
     
     for nuc in args.nucles:
