@@ -4,7 +4,7 @@
 """
 Author: Martin Dagleish (MRJD)
 
-Version 0.2.3
+Version 0.2.4
 
 This is a wrapper script for the CENSO programme. 
 
@@ -31,15 +31,17 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+
 # * Changelog
-# * 0.2.3 - Fixed the .censorc file writing and added the option to look in crest_tmp for files.  
-# * 0.2.2 - Added postprocess lines for multiline strings and more readable code 
-# * 0.2.1 - Fixed typo and added float checker. 
+# * 0.2.4 - Added the restart flag and simpler solution for choosen nuclei in code 
+# * 0.2.3 - Fixed the .censorc file writing and added the option to look in crest_tmp for files.
+# * 0.2.2 - Added postprocess lines for multiline strings and more readable code
+# * 0.2.1 - Fixed typo and added float checker.
 # * 0.2.0 - Added nucleus option, writes .censorc and requestes lamor frequency
 # * 0.1.1 - Fixed namespace error
 # * 0.1.0 - Initial release
 
-VERSION = "0.2.3"
+VERSION = "0.2.4"
 
 import os
 import sys
@@ -65,6 +67,7 @@ crest_parser = argparse.ArgumentParser(
     usage="%(prog)s input-file [options]",
     description=f"Run an CENSO calculation for a given input file. -> Script Version {VERSION}",
 )
+
 crest_parser.add_argument(
     "nucles",
     type=str,
@@ -74,6 +77,7 @@ crest_parser.add_argument(
         1H, 13C, 31P, 28Si space separated for more than one \
             (default: %(default)s)",
 )
+
 crest_parser.add_argument(
     "--freq",
     type=str,
@@ -82,6 +86,7 @@ crest_parser.add_argument(
         calculation to run. Reasonable: 300 (1H), 162 (31P), ... \
             (default: %(default)s)",
 )
+
 crest_parser.add_argument(
     "--input",  #! Positional argument
     metavar="CONFORMERS",
@@ -89,6 +94,7 @@ crest_parser.add_argument(
     default="crest_conformers.xyz",
     help="Conformers file to run the calculation on. (default: %(default)s)",
 )
+
 crest_parser.add_argument(
     "--func0",  #! Positional argument
     metavar="FUNC",
@@ -96,6 +102,7 @@ crest_parser.add_argument(
     default="b97-d3",
     help="Functional for prescreening. (default: %(default)s)",
 )
+
 crest_parser.add_argument(
     "--funcNMR",  #! Positional argument
     metavar="FUNC",
@@ -103,6 +110,7 @@ crest_parser.add_argument(
     default="tpss-d4",
     help="Functional for NMR calculation (J and S). (default: %(default)s)",
 )
+
 crest_parser.add_argument(
     "-B",  #! Positional argument
     "--basis",
@@ -111,6 +119,7 @@ crest_parser.add_argument(
     default="pcsseg-3",
     help="Basis for NMR calculation (J and S) (default: %(default)s)",
 )
+
 crest_parser.add_argument(
     "-s",
     "--solvent",  #! Positional argument
@@ -118,6 +127,17 @@ crest_parser.add_argument(
     type=str,
     help="The solvent to use in the calculation (default: ALPB).",
 )
+
+crest_parser.add_argument(
+    "--restart",
+    action="store_true",
+    help="Restart the calculation from the last saved files.",
+)
+
+crest_parser.add_argument(
+    "--namespace", action="store_true", help="Use the namespace for the calculation."
+)
+
 # crest_parser.add_argument(
 #     "-T",
 #     "--threads",  #! Optional argument
@@ -179,6 +199,7 @@ def get_solvent(solvent_user_inp):
         if solvent_user_inp in solvent_names:
             return solvent
 
+
 def isfloat(num):
     """
     Helper function for checking if a string is a float.
@@ -189,11 +210,13 @@ def isfloat(num):
     except ValueError:
         return False
 
+
 # * postprocess the multiline string
 def postprocess_str(multl_str):
-    lines = multl_str.split('\n')
-    lines = [line.strip()+"\n" for line in lines[:-1]]
-    return lines 
+    lines = multl_str.split("\n")
+    lines = [line.strip() + "\n" for line in lines[:-1]]
+    return lines
+
 
 #! Run the calculation, acutal programm:
 if __name__ == "__main__":
@@ -201,52 +224,59 @@ if __name__ == "__main__":
 
     user_inp = args.input
     filename, ext = os.path.splitext(user_inp)
-    namespace = filename.split(".")[0]  # * remove the .xtbopt or .xtb from the name
-        
+
+    if not args.namespace:
+        namespace = filename.split(".")[0]  # * remove the .xtbopt or .xtb from the name
+    else:
+        namespace = args.namespace
+
     # * Options for CENSO run
     options = []
 
-    options.append("--input")
-    options.append(args.input)  # * default or custom input file
-    options.append("--func0")
-    options.append(args.func0)  # * default or custom functional for prescreening
-    options.append("--solvent")
-    if args.solvent:
-        try:
-            SOLVENT = get_solvent(args.solvent)
-            if SOLVENT:
-                options.append(SOLVENT)
-            else:
-                raise ValueError("Solvent not found")
-        except ValueError:
-            print(
-                f"The solvent '{args.solvent}' is not supported.\nPossible solvents are:\n\n \
-                    {', '.join(solvent_dict.keys())}"
-            )
-            sys.exit(1)
-    options.append("-smgsolv1")
-    options.append("smd")
-    options.append("-sm2")
-    options.append("smd")
-    options.append("--smgsolv2")
-    options.append("smd")
-    options.append("--prog")
-    options.append("orca")
-    # * NMR options
-    options.append("--part4")
-    options.append("on")
-    options.append("--prog4J")
-    options.append("orca")
-    options.append("-funcJ")
-    options.append(args.funcNMR)
-    options.append("-funcS")
-    options.append(args.funcNMR)
-    options.append("-basisJ")
-    options.append(args.basis)
-    options.append("-basisS")
-    options.append(args.basis)
-    options.append("-cactive")
-    options.append("off")
+    if not args.restart:
+        options.append("--input")
+        options.append(args.input)  # * default or custom input file
+        options.append("--func0")
+        options.append(args.func0)  # * default or custom functional for prescreening
+        options.append("--solvent")
+        if args.solvent:
+            try:
+                SOLVENT = get_solvent(args.solvent)
+                if SOLVENT:
+                    options.append(SOLVENT)
+                else:
+                    raise ValueError("Solvent not found")
+            except ValueError:
+                print(
+                    f"The solvent '{args.solvent}' is not supported.\nPossible solvents are:\n\n \
+                        {', '.join(solvent_dict.keys())}"
+                )
+                sys.exit(1)
+        options.append("-smgsolv1")
+        options.append("smd")
+        options.append("-sm2")
+        options.append("smd")
+        options.append("--smgsolv2")
+        options.append("smd")
+        options.append("--prog")
+        options.append("orca")
+        # * NMR options
+        options.append("--part4")
+        options.append("on")
+        options.append("--prog4J")
+        options.append("orca")
+        options.append("-funcJ")
+        options.append(args.funcNMR)
+        options.append("-funcS")
+        options.append(args.funcNMR)
+        options.append("-basisJ")
+        options.append(args.basis)
+        options.append("-basisS")
+        options.append(args.basis)
+        options.append("-cactive")
+        options.append("off")
+    else:
+        options.append("--restart")
 
     # * mkdir tmp folder for CENSO run
     censo_path = os.path.join(cwd, "censo_tmp")
@@ -266,50 +296,47 @@ if __name__ == "__main__":
                 ["mv", filename, censo_path], stdout=subprocess.PIPE, check=True
             )
         else:
-            print(f"File {filename} not found! Trying to copy the files from crest_tmp...")
+            print(
+                f"File {filename} not found! Trying to copy the files from crest_tmp..."
+            )
             if os.path.isfile(os.path.join(cwd, "crest_tmp", filename)):
                 subprocess.run(
-                    ["cp", os.path.join(cwd, "crest_tmp", filename), censo_path], stdout=subprocess.PIPE, check=True
+                    ["cp", os.path.join(cwd, "crest_tmp", filename), censo_path],
+                    stdout=subprocess.PIPE,
+                    check=True,
                 )
-            else: 
+            else:
                 raise ValueError(f"File {filename} not found!")
-                
+
     os.chdir(censo_path)
-    
+
+    nuc_bool_dict = {
+        "1H": "off",
+        "13C:": "off",
+        "19F": "off",
+        "29Si": "off",
+        "31P": "off",
+    }
+
     for nuc in args.nucles:
         if "1H" in nuc:
-            h_nmr_bool = "on"
-        else: 
-            h_nmr_bool = "off"
-            
+            nuc_bool_dict["1H"] = "on"
         if "13C" in nuc:
-            c_nmr_bool = "on"
-        else: 
-            c_nmr_bool = "off"
-            
+            nuc_bool_dict["13C"] = "on"
         if "19F" in nuc:
-            f_nmr_bool = "on"
-        else: 
-            f_nmr_bool = "off"
-            
+            nuc_bool_dict["19F"] = "on"
         if "29Si" in nuc:
-            si_nmr_bool = "on"
-        else: 
-            si_nmr_bool = "off"
-            
+            nuc_bool_dict["29Si"] = "on"
         if "31P" in nuc:
-            p_nmr_bool = "on"
-        else: 
-            p_nmr_bool = "off"     
-            
+            nuc_bool_dict["31P"] = "on"
+
     freq = args.freq
     if not isfloat(freq):
         print("Please enter a number for the frequency.")
         sys.exit(1)
-               
 
     # * Writing the .censorc file for CENSO calculation
-    with open(f".censorc", "w", encoding="utf-8") as f:        
+    with open(f".censorc", "w", encoding="utf-8") as f:
         default_censorc = f"""
         $CENSO global configuration file: .censorc
         $VERSION:1.2.0 
@@ -412,11 +439,11 @@ if __name__ == "__main__":
         reference_19F: CFCl3             # ['CFCl3'] 
         reference_29Si: TMS              # ['TMS'] 
         reference_31P: TMP               # ['TMP', 'PH3'] 
-        1H_active: {h_nmr_bool}                   # ['on', 'off'] 
-        13C_active: {c_nmr_bool}                   # ['on', 'off'] 
-        19F_active: {f_nmr_bool}                  # ['on', 'off'] 
-        29Si_active: {si_nmr_bool}                 # ['on', 'off'] 
-        31P_active: {p_nmr_bool}                   # ['on', 'off'] 
+        1H_active: {nuc_bool_dict.get("1H","off")}                   # ['on', 'off'] 
+        13C_active: {nuc_bool_dict.get("13C","off")}                   # ['on', 'off'] 
+        19F_active: {nuc_bool_dict.get("19F","off")}                  # ['on', 'off'] 
+        29Si_active: {nuc_bool_dict.get("29Si","off")}                 # ['on', 'off'] 
+        31P_active: {nuc_bool_dict.get("31P","off")}                   # ['on', 'off'] 
         resonance_frequency: {freq}       # ['MHz number of your experimental spectrometer setup'] 
 
         $OPTICAL ROTATION PROPERTY SETTINGS:
