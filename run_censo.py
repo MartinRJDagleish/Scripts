@@ -4,7 +4,7 @@
 """
 Author: Martin Dagleish (MRJD)
 
-Version 0.2.4
+Version 0.2.5
 
 This is a wrapper script for the CENSO programme. 
 
@@ -33,7 +33,8 @@ SOFTWARE.
 
 
 # * Changelog
-# * 0.2.4 - Added the restart flag and simpler solution for choosen nuclei in code 
+# * 0.2.5 - Fixed namespace and restart option 
+# * 0.2.4 - Added the restart flag and simpler solution for choosen nuclei in code
 # * 0.2.3 - Fixed the .censorc file writing and added the option to look in crest_tmp for files.
 # * 0.2.2 - Added postprocess lines for multiline strings and more readable code
 # * 0.2.1 - Fixed typo and added float checker.
@@ -41,7 +42,7 @@ SOFTWARE.
 # * 0.1.1 - Fixed namespace error
 # * 0.1.0 - Initial release
 
-VERSION = "0.2.4"
+VERSION = "0.2.5"
 
 import os
 import sys
@@ -72,7 +73,7 @@ crest_parser.add_argument(
     "nucles",
     type=str,
     default="1H",
-    nargs="+",
+    nargs="?",
     help="Choose the NMR calculation to run. Possible: \
         1H, 13C, 31P, 28Si space separated for more than one \
             (default: %(default)s)",
@@ -135,9 +136,12 @@ crest_parser.add_argument(
 )
 
 crest_parser.add_argument(
-    "--namespace", action="store_true", help="Use the namespace for the calculation."
+    "-n",
+    "--namespace",  #! Optional argument
+    metavar="Name",
+    type=str,
+    help="The name of the calculation",
 )
-
 # crest_parser.add_argument(
 #     "-T",
 #     "--threads",  #! Optional argument
@@ -226,7 +230,7 @@ if __name__ == "__main__":
     filename, ext = os.path.splitext(user_inp)
 
     if not args.namespace:
-        namespace = filename.split(".")[0]  # * remove the .xtbopt or .xtb from the name
+        namespace = filename.split(".")[0]
     else:
         namespace = args.namespace
 
@@ -277,6 +281,7 @@ if __name__ == "__main__":
         options.append("off")
     else:
         options.append("--restart")
+        namespace += "_restart"
 
     # * mkdir tmp folder for CENSO run
     censo_path = os.path.join(cwd, "censo_tmp")
@@ -290,6 +295,7 @@ if __name__ == "__main__":
         "anmr_nucinfo",
         "anmr_rotamer",
     ]
+
     for filename in copy_filelst:
         if os.path.isfile(os.path.join(cwd, filename)):
             subprocess.run(
@@ -310,151 +316,152 @@ if __name__ == "__main__":
 
     os.chdir(censo_path)
 
-    nuc_bool_dict = {
-        "1H": "off",
-        "13C:": "off",
-        "19F": "off",
-        "29Si": "off",
-        "31P": "off",
-    }
+    if not args.restart:
+        nuc_bool_dict = {
+            "1H": "off",
+            "13C:": "off",
+            "19F": "off",
+            "29Si": "off",
+            "31P": "off",
+        }
 
-    for nuc in args.nucles:
-        if "1H" in nuc:
-            nuc_bool_dict["1H"] = "on"
-        if "13C" in nuc:
-            nuc_bool_dict["13C"] = "on"
-        if "19F" in nuc:
-            nuc_bool_dict["19F"] = "on"
-        if "29Si" in nuc:
-            nuc_bool_dict["29Si"] = "on"
-        if "31P" in nuc:
-            nuc_bool_dict["31P"] = "on"
+        for nuc in args.nucles:
+            if "1H" in nuc:
+                nuc_bool_dict["1H"] = "on"
+            if "13C" in nuc:
+                nuc_bool_dict["13C"] = "on"
+            if "19F" in nuc:
+                nuc_bool_dict["19F"] = "on"
+            if "29Si" in nuc:
+                nuc_bool_dict["29Si"] = "on"
+            if "31P" in nuc:
+                nuc_bool_dict["31P"] = "on"
 
-    freq = args.freq
-    if not isfloat(freq):
-        print("Please enter a number for the frequency.")
-        sys.exit(1)
+        freq = args.freq
+        if not isfloat(freq):
+            print("Please enter a number for the frequency.")
+            sys.exit(1)
 
-    # * Writing the .censorc file for CENSO calculation
-    with open(f".censorc", "w", encoding="utf-8") as f:
-        default_censorc = f"""
-        $CENSO global configuration file: .censorc
-        $VERSION:1.2.0 
+        # * Writing the .censorc file for CENSO calculation
+        with open(f".censorc", "w", encoding="utf-8") as f:
+            default_censorc = f"""
+            $CENSO global configuration file: .censorc
+            $VERSION:1.2.0 
 
-        ORCA: /loctmp/dam63759/orca
-        ORCA version: 5.0.3
-        GFN-xTB: /loctmp/dam63759/xtb-6.5.1/bin/xtb
-        CREST: /loctmp/dam63759/crest/crest
-        mpshift: /path/including/binary/mpshift-binary
-        escf: /path/including/binary/escf-binary
+            ORCA: /loctmp/dam63759/orca
+            ORCA version: 5.0.3
+            GFN-xTB: /loctmp/dam63759/xtb-6.5.1/bin/xtb
+            CREST: /loctmp/dam63759/crest/crest
+            mpshift: /path/including/binary/mpshift-binary
+            escf: /path/including/binary/escf-binary
 
-        #COSMO-RS
-        ctd = BP_TZVP_C30_1601.ctd cdir = "/software/cluster/COSMOthermX16/COSMOtherm/CTDATA-FILES" ldir = "/software/cluster/COSMOthermX16/COSMOtherm/CTDATA-FILES"
-        $ENDPROGRAMS
+            #COSMO-RS
+            ctd = BP_TZVP_C30_1601.ctd cdir = "/software/cluster/COSMOthermX16/COSMOtherm/CTDATA-FILES" ldir = "/software/cluster/COSMOthermX16/COSMOtherm/CTDATA-FILES"
+            $ENDPROGRAMS
 
-        $CRE SORTING SETTINGS:
-        $GENERAL SETTINGS:
-        nconf: all                       # ['all', 'number e.g. 10 up to all conformers'] 
-        charge: 0                        # ['number e.g. 0'] 
-        unpaired: 0                      # ['number e.g. 0'] 
-        solvent: benzene                 # ['gas', 'acetone', 'acetonitrile', 'aniline', 'benzaldehyde', 'benzene', 'ccl4', '...'] 
-        prog_rrho: xtb                   # ['xtb'] 
-        temperature: 298.15              # ['temperature in K e.g. 298.15'] 
-        trange: [273.15, 378.15, 5]      # ['temperature range [start, end, step]'] 
-        multitemp: on                    # ['on', 'off'] 
-        evaluate_rrho: on                # ['on', 'off'] 
-        consider_sym: on                 # ['on', 'off'] 
-        bhess: on                        # ['on', 'off'] 
-        imagthr: automatic               # ['automatic or e.g., -100    # in cm-1'] 
-        sthr: automatic                  # ['automatic or e.g., 50     # in cm-1'] 
-        scale: automatic                 # ['automatic or e.g., 1.0 '] 
-        rmsdbias: off                    # ['on', 'off'] 
-        sm_rrho: alpb                    # ['alpb', 'gbsa'] 
-        progress: off                    # ['on', 'off'] 
-        check: on                        # ['on', 'off'] 
-        prog: orca                       # ['tm', 'orca'] 
-        func: r2scan-3c                  # ['b3-lyp', 'b3lyp', 'b3lyp-3c', 'b3lyp-d3', 'b3lyp-d3(0)', 'b3lyp-d4', 'b3lyp-nl', '...'] 
-        basis: automatic                 # ['automatic', 'def2-TZVP', 'def2-mSVP', 'def2-mSVP', 'def2-mSVP', 'def2-mSVP', '...'] 
-        maxthreads: 2                    # ['number of threads e.g. 2'] 
-        omp: 4                           # ['number cores per thread e.g. 4'] 
-        balance: off                     # ['on', 'off'] 
-        cosmorsparam: automatic          # ['automatic', '12-fine', '12-normal', '13-fine', '13-normal', '14-fine', '...'] 
+            $CRE SORTING SETTINGS:
+            $GENERAL SETTINGS:
+            nconf: all                       # ['all', 'number e.g. 10 up to all conformers'] 
+            charge: 0                        # ['number e.g. 0'] 
+            unpaired: 0                      # ['number e.g. 0'] 
+            solvent: benzene                 # ['gas', 'acetone', 'acetonitrile', 'aniline', 'benzaldehyde', 'benzene', 'ccl4', '...'] 
+            prog_rrho: xtb                   # ['xtb'] 
+            temperature: 298.15              # ['temperature in K e.g. 298.15'] 
+            trange: [273.15, 378.15, 5]      # ['temperature range [start, end, step]'] 
+            multitemp: on                    # ['on', 'off'] 
+            evaluate_rrho: on                # ['on', 'off'] 
+            consider_sym: on                 # ['on', 'off'] 
+            bhess: on                        # ['on', 'off'] 
+            imagthr: automatic               # ['automatic or e.g., -100    # in cm-1'] 
+            sthr: automatic                  # ['automatic or e.g., 50     # in cm-1'] 
+            scale: automatic                 # ['automatic or e.g., 1.0 '] 
+            rmsdbias: off                    # ['on', 'off'] 
+            sm_rrho: alpb                    # ['alpb', 'gbsa'] 
+            progress: off                    # ['on', 'off'] 
+            check: on                        # ['on', 'off'] 
+            prog: orca                       # ['tm', 'orca'] 
+            func: r2scan-3c                  # ['b3-lyp', 'b3lyp', 'b3lyp-3c', 'b3lyp-d3', 'b3lyp-d3(0)', 'b3lyp-d4', 'b3lyp-nl', '...'] 
+            basis: automatic                 # ['automatic', 'def2-TZVP', 'def2-mSVP', 'def2-mSVP', 'def2-mSVP', 'def2-mSVP', '...'] 
+            maxthreads: 2                    # ['number of threads e.g. 2'] 
+            omp: 4                           # ['number cores per thread e.g. 4'] 
+            balance: off                     # ['on', 'off'] 
+            cosmorsparam: automatic          # ['automatic', '12-fine', '12-normal', '13-fine', '13-normal', '14-fine', '...'] 
 
-        $PART0 - CHEAP-PRESCREENING - SETTINGS:
-        part0: on                        # ['on', 'off'] 
-        func0: b97-d3                    # ['b3-lyp', 'b3lyp', 'b3lyp-3c', 'b3lyp-d3', 'b3lyp-d3(0)', 'b3lyp-d4', '...'] 
-        basis0: def2-SV(P)               # ['automatic', 'def2-SV(P)', 'def2-TZVP', 'def2-mSVP', 'def2-mSVP', 'def2-mSVP', '...'] 
-        part0_gfnv: gfn2                 # ['gfn1', 'gfn2', 'gfnff'] 
-        part0_threshold: 4.0             # ['number e.g. 4.0'] 
+            $PART0 - CHEAP-PRESCREENING - SETTINGS:
+            part0: on                        # ['on', 'off'] 
+            func0: b97-d3                    # ['b3-lyp', 'b3lyp', 'b3lyp-3c', 'b3lyp-d3', 'b3lyp-d3(0)', 'b3lyp-d4', '...'] 
+            basis0: def2-SV(P)               # ['automatic', 'def2-SV(P)', 'def2-TZVP', 'def2-mSVP', 'def2-mSVP', 'def2-mSVP', '...'] 
+            part0_gfnv: gfn2                 # ['gfn1', 'gfn2', 'gfnff'] 
+            part0_threshold: 4.0             # ['number e.g. 4.0'] 
 
-        $PART1 - PRESCREENING - SETTINGS:
-        # func and basis is set under GENERAL SETTINGS
-        part1: on                        # ['on', 'off'] 
-        smgsolv1: smd                    # ['alpb_gsolv', 'cosmo', 'cosmors', 'cosmors-fine', 'cpcm', 'dcosmors', '...'] 
-        part1_gfnv: gfn2                 # ['gfn1', 'gfn2', 'gfnff'] 
-        part1_threshold: 3.5             # ['number e.g. 5.0'] 
+            $PART1 - PRESCREENING - SETTINGS:
+            # func and basis is set under GENERAL SETTINGS
+            part1: on                        # ['on', 'off'] 
+            smgsolv1: smd                    # ['alpb_gsolv', 'cosmo', 'cosmors', 'cosmors-fine', 'cpcm', 'dcosmors', '...'] 
+            part1_gfnv: gfn2                 # ['gfn1', 'gfn2', 'gfnff'] 
+            part1_threshold: 3.5             # ['number e.g. 5.0'] 
 
-        $PART2 - OPTIMIZATION - SETTINGS:
-        # func and basis is set under GENERAL SETTINGS
-        part2: on                        # ['on', 'off'] 
-        prog2opt: prog                   # ['tm', 'orca', 'prog', 'automatic'] 
-        part2_threshold: 2.5             # ['number e.g. 4.0'] 
-        sm2: smd                         # ['cosmo', 'cpcm', 'dcosmors', 'default', 'smd'] 
-        smgsolv2: smd                    # ['alpb_gsolv', 'cosmo', 'cosmors', 'cosmors-fine', 'cpcm', 'dcosmors', '...'] 
-        part2_gfnv: gfn2                 # ['gfn1', 'gfn2', 'gfnff'] 
-        ancopt: on                       # ['on'] 
-        hlow: 0.01                       # ['lowest force constant in ANC generation, e.g. 0.01'] 
-        opt_spearman: on                 # ['on', 'off'] 
-        part2_P_threshold: 99            # ['Boltzmann sum threshold in %. e.g. 95 (between 1 and 100)'] 
-        optlevel2: automatic             # ['crude', 'sloppy', 'loose', 'lax', 'normal', 'tight', 'vtight', 'extreme', '...'] 
-        optcycles: 8                     # ['number e.g. 5 or 10'] 
-        spearmanthr: -4.0                # ['value between -1 and 1, if outside set automatically'] 
-        radsize: 10                      # ['number e.g. 8 or 10'] 
-        crestcheck: off                  # ['on', 'off'] 
+            $PART2 - OPTIMIZATION - SETTINGS:
+            # func and basis is set under GENERAL SETTINGS
+            part2: on                        # ['on', 'off'] 
+            prog2opt: prog                   # ['tm', 'orca', 'prog', 'automatic'] 
+            part2_threshold: 2.5             # ['number e.g. 4.0'] 
+            sm2: smd                         # ['cosmo', 'cpcm', 'dcosmors', 'default', 'smd'] 
+            smgsolv2: smd                    # ['alpb_gsolv', 'cosmo', 'cosmors', 'cosmors-fine', 'cpcm', 'dcosmors', '...'] 
+            part2_gfnv: gfn2                 # ['gfn1', 'gfn2', 'gfnff'] 
+            ancopt: on                       # ['on'] 
+            hlow: 0.01                       # ['lowest force constant in ANC generation, e.g. 0.01'] 
+            opt_spearman: on                 # ['on', 'off'] 
+            part2_P_threshold: 99            # ['Boltzmann sum threshold in %. e.g. 95 (between 1 and 100)'] 
+            optlevel2: automatic             # ['crude', 'sloppy', 'loose', 'lax', 'normal', 'tight', 'vtight', 'extreme', '...'] 
+            optcycles: 8                     # ['number e.g. 5 or 10'] 
+            spearmanthr: -4.0                # ['value between -1 and 1, if outside set automatically'] 
+            radsize: 10                      # ['number e.g. 8 or 10'] 
+            crestcheck: off                  # ['on', 'off'] 
 
-        $PART3 - REFINEMENT - SETTINGS:
-        part3: off                       # ['on', 'off'] 
-        prog3: prog                      # ['tm', 'orca', 'prog'] 
-        func3: pw6b95                    # ['b3-lyp', 'b3lyp', 'b3lyp-3c', 'b3lyp-d3', 'b3lyp-d3(0)', 'b3lyp-d4', 'b3lyp-nl', '...'] 
-        basis3: def2-TZVPD               # ['DZ', 'QZV', 'QZVP', 'QZVPP', 'SV(P)', 'SVP', 'TZVP', 'TZVPP', 'aug-cc-pV5Z', '...'] 
-        smgsolv3: smd                    # ['alpb_gsolv', 'cosmo', 'cosmors', 'cosmors-fine', 'cpcm', 'dcosmors', '...'] 
-        part3_gfnv: gfn2                 # ['gfn1', 'gfn2', 'gfnff'] 
-        part3_threshold: 99              # ['Boltzmann sum threshold in %. e.g. 95 (between 1 and 100)'] 
+            $PART3 - REFINEMENT - SETTINGS:
+            part3: off                       # ['on', 'off'] 
+            prog3: prog                      # ['tm', 'orca', 'prog'] 
+            func3: pw6b95                    # ['b3-lyp', 'b3lyp', 'b3lyp-3c', 'b3lyp-d3', 'b3lyp-d3(0)', 'b3lyp-d4', 'b3lyp-nl', '...'] 
+            basis3: def2-TZVPD               # ['DZ', 'QZV', 'QZVP', 'QZVPP', 'SV(P)', 'SVP', 'TZVP', 'TZVPP', 'aug-cc-pV5Z', '...'] 
+            smgsolv3: smd                    # ['alpb_gsolv', 'cosmo', 'cosmors', 'cosmors-fine', 'cpcm', 'dcosmors', '...'] 
+            part3_gfnv: gfn2                 # ['gfn1', 'gfn2', 'gfnff'] 
+            part3_threshold: 99              # ['Boltzmann sum threshold in %. e.g. 95 (between 1 and 100)'] 
 
-        $NMR PROPERTY SETTINGS:
-        $PART4 SETTINGS:
-        part4: on                     # ['on', 'off'] 
-        couplings: on                    # ['on', 'off'] 
-        progJ: orca                      # ['tm', 'orca', 'prog'] 
-        funcJ: pbe0                      # ['b3-lyp', 'b3lyp', 'b3lyp-3c', 'b3lyp-d3', 'b3lyp-d3(0)', 'b3lyp-d4', 'b3lyp-nl', '...'] 
-        basisJ: def2-TZVP                # ['DZ', 'QZV', 'QZVP', 'QZVPP', 'SV(P)', 'SVP', 'TZVP', 'TZVPP', 'aug-cc-pV5Z', '...'] 
-        sm4J: smd                        # ['cosmo', 'cpcm', 'dcosmors', 'smd'] 
-        shieldings: on                   # ['on', 'off'] 
-        progS: prog                      # ['tm', 'orca', 'prog'] 
-        funcS: pbe0                      # ['b3-lyp', 'b3lyp', 'b3lyp-3c', 'b3lyp-d3', 'b3lyp-d3(0)', 'b3lyp-d4', 'b3lyp-nl', '...'] 
-        basisS: def2-TZVP                # ['DZ', 'QZV', 'QZVP', 'QZVPP', 'SV(P)', 'SVP', 'TZVP', 'TZVPP', 'aug-cc-pV5Z', '...'] 
-        sm4S: smd                        # ['cosmo', 'cpcm', 'dcosmors', 'smd'] 
-        reference_1H: TMS                # ['TMS'] 
-        reference_13C: TMS               # ['TMS'] 
-        reference_19F: CFCl3             # ['CFCl3'] 
-        reference_29Si: TMS              # ['TMS'] 
-        reference_31P: TMP               # ['TMP', 'PH3'] 
-        1H_active: {nuc_bool_dict.get("1H","off")}                   # ['on', 'off'] 
-        13C_active: {nuc_bool_dict.get("13C","off")}                   # ['on', 'off'] 
-        19F_active: {nuc_bool_dict.get("19F","off")}                  # ['on', 'off'] 
-        29Si_active: {nuc_bool_dict.get("29Si","off")}                 # ['on', 'off'] 
-        31P_active: {nuc_bool_dict.get("31P","off")}                   # ['on', 'off'] 
-        resonance_frequency: {freq}       # ['MHz number of your experimental spectrometer setup'] 
+            $NMR PROPERTY SETTINGS:
+            $PART4 SETTINGS:
+            part4: on                     # ['on', 'off'] 
+            couplings: on                    # ['on', 'off'] 
+            progJ: orca                      # ['tm', 'orca', 'prog'] 
+            funcJ: pbe0                      # ['b3-lyp', 'b3lyp', 'b3lyp-3c', 'b3lyp-d3', 'b3lyp-d3(0)', 'b3lyp-d4', 'b3lyp-nl', '...'] 
+            basisJ: def2-TZVP                # ['DZ', 'QZV', 'QZVP', 'QZVPP', 'SV(P)', 'SVP', 'TZVP', 'TZVPP', 'aug-cc-pV5Z', '...'] 
+            sm4J: smd                        # ['cosmo', 'cpcm', 'dcosmors', 'smd'] 
+            shieldings: on                   # ['on', 'off'] 
+            progS: prog                      # ['tm', 'orca', 'prog'] 
+            funcS: pbe0                      # ['b3-lyp', 'b3lyp', 'b3lyp-3c', 'b3lyp-d3', 'b3lyp-d3(0)', 'b3lyp-d4', 'b3lyp-nl', '...'] 
+            basisS: def2-TZVP                # ['DZ', 'QZV', 'QZVP', 'QZVPP', 'SV(P)', 'SVP', 'TZVP', 'TZVPP', 'aug-cc-pV5Z', '...'] 
+            sm4S: smd                        # ['cosmo', 'cpcm', 'dcosmors', 'smd'] 
+            reference_1H: TMS                # ['TMS'] 
+            reference_13C: TMS               # ['TMS'] 
+            reference_19F: CFCl3             # ['CFCl3'] 
+            reference_29Si: TMS              # ['TMS'] 
+            reference_31P: TMP               # ['TMP', 'PH3'] 
+            1H_active: {nuc_bool_dict.get("1H","off")}                   # ['on', 'off'] 
+            13C_active: {nuc_bool_dict.get("13C","off")}                   # ['on', 'off'] 
+            19F_active: {nuc_bool_dict.get("19F","off")}                  # ['on', 'off'] 
+            29Si_active: {nuc_bool_dict.get("29Si","off")}                 # ['on', 'off'] 
+            31P_active: {nuc_bool_dict.get("31P","off")}                   # ['on', 'off'] 
+            resonance_frequency: {freq}       # ['MHz number of your experimental spectrometer setup'] 
 
-        $OPTICAL ROTATION PROPERTY SETTINGS:
-        $PART5 SETTINGS:
-        optical_rotation: off            # ['on', 'off'] 
-        funcOR: pbe                      # ['functional for opt_rot e.g. pbe'] 
-        funcOR_SCF: r2scan-3c            # ['functional for SCF in opt_rot e.g. r2scan-3c'] 
-        basisOR: def2-SVPD               # ['basis set for opt_rot e.g. def2-SVPD'] 
-        frequency_optical_rot: [589.0]   # ['list of freq in nm to evaluate opt rot at e.g. [589, 700]'] 
-        $END CENSORC
-        """
+            $OPTICAL ROTATION PROPERTY SETTINGS:
+            $PART5 SETTINGS:
+            optical_rotation: off            # ['on', 'off'] 
+            funcOR: pbe                      # ['functional for opt_rot e.g. pbe'] 
+            funcOR_SCF: r2scan-3c            # ['functional for SCF in opt_rot e.g. r2scan-3c'] 
+            basisOR: def2-SVPD               # ['basis set for opt_rot e.g. def2-SVPD'] 
+            frequency_optical_rot: [589.0]   # ['list of freq in nm to evaluate opt rot at e.g. [589, 700]'] 
+            $END CENSORC
+            """
 
         f.writelines(postprocess_str(default_censorc))
 
