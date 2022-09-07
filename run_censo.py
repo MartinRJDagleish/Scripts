@@ -73,6 +73,7 @@ crest_parser.add_argument(
     "nucles",
     type=str,
     default="1H",
+    # choices=["1H", "13C", "28Si", "31P"],
     nargs="?",
     help="Choose the NMR calculation to run. Possible: \
         1H, 13C, 31P, 28Si space separated for more than one \

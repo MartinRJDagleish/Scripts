@@ -55,29 +55,17 @@ except ImportError:
     print("Please install subprocess. Via pip install subprocess")
     sys.exit(1)
 
-#!##############################################################################
-#!                                 PART 1                                      #
-#!##############################################################################
-
-
 # * Show the OS running this script
 OPERATING_SYTEM = sys.platform
 
-#! Part 1.1 -> xtb installation and path finding
-
+#! NOTE: 
 # * This is a HIGHLY custom directory for the ORCA programme, but the problem is
 # * that Linux already has a 'ORCA' programme (screen reader) which means that
-# * the path has to be added manually. (Or at least I don't know how to do it)
+# * the path has to be added manually. (Or at least I don't know how else to do it)
 if OPERATING_SYTEM in ("linux", "linux2"):
     ORCA_PATH = "/loctmp/dam63759/orca/orca"
 elif OPERATING_SYTEM == "win32":
     ORCA_PATH = r"C:\ORCA\orca.exe"
-
-
-#!##############################################################################
-#!                                 PART 2                                      #
-#!##############################################################################
-#! Create parser to get the arguments from the command line.
 
 # * Create the parser
 orca_parser = argparse.ArgumentParser(
@@ -92,6 +80,7 @@ orca_parser.add_argument(
     type=str,
     help="The input-file to run the calculation on. Either with or without extension.",
 )
+
 orca_parser.add_argument(
     "--xyz",  #! Positional argument
     metavar="XYZ-FILE",
