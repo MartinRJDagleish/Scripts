@@ -1,3 +1,17 @@
+######################################################################
+#
+#
+#           ██████╗  █████╗ ███████╗██╗  ██╗██████╗  ██████╗
+#           ██╔══██╗██╔══██╗██╔════╝██║  ██║██╔══██╗██╔════╝
+#           ██████╔╝███████║███████╗███████║██████╔╝██║     
+#           ██╔══██╗██╔══██║╚════██║██╔══██║██╔══██╗██║     
+#           ██████╔╝██║  ██║███████║██║  ██║██║  ██║╚██████╗
+#           ╚═════╝ ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝
+#
+#
+######################################################################
+
+
 export PATH="$HOME/bin:$PATH"
 eval "$(oh-my-posh init bash --config ~/.poshthemes/clean-detailed.omp.json)"
 
@@ -17,4 +31,19 @@ ulimit -s unlimited # this is necassary for xtb and anmr -> prevention of stacko
 
 tailbat() {
 	tail -f "$1" | bat --paging=never -l log 
+}
+
+alias h="history"
+alias lsa="ls -a"
+alias lsl="ls -l"
+alias orcaw="cd /loctmp/dam63759/orca_work"
+alias ..="cd .."
+alias ...="cd ../.."
+
+alias bashrc="nvim ~/.bashrc"
+
+function largest_files() {
+	echo "$(pwd)";
+	echo "";
+	du -h -x -s -- * | sort -r -h | head -20;
 }
