@@ -13,8 +13,8 @@ echo "------------------"
 echo ""
 xtb --version
 wait 
-cd /loctmp/dam63759/orca 
-ln -s $(which xtb) otool_xtb
+# cd /loctmp/dam63759/orca 
+# ln -s $(which xtb) otool_xtb
 cd ..
 rm -rf xtb-6.5.1-linux-x86_64.tar.xz 
 echo ""

@@ -36,19 +36,17 @@ SOFTWARE.
 
 VERSION = "0.1.0"
 
-import os
-import sys
+import os 
 from pathlib import Path
 
 cwd = Path.cwd()
 wsl_path = cwd.as_posix().replace("\\", "/")
 wsl_path = wsl_path.replace("C:", "/mnt/c")
-print()
-print(wsl_path)
-print()
+
+print("\n", wsl_path, "\n")
+
 clipboard_bool = input("Copy to clipboard? (y/n) ")
 if clipboard_bool == "y":
     os.system("echo " + wsl_path + " | clip")
     print("Copied to clipboard")
     print() 
-sys.exit()
