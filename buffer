@@ -1,0 +1,1 @@
+obabel f"{namespace}.g98.out" "-i" "g98" "-o" "molden" "-O" "{namespace}_FREQ.molden"

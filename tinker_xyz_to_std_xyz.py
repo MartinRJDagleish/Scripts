@@ -4,7 +4,7 @@
 """
 Author: Martin Dagleish (MRJD)
 
-Version 0.3.0
+Version 0.3.1
 
 This script converts the Chem3D Tinker xyz files to standard xyz files.
 This is needed in order to use the .xyz files for any other program.
@@ -34,6 +34,7 @@ SOFTWARE.
 """
 
 # * Changelog:
+# * 0.3.1 - Fixed bug for coordinates with double digits
 # * 0.3.0 - Simplified the code (unnecessary if statements removed) and prettified the print statements.
 # * 0.2.0 - Added fix for negative values for the number of atoms and renewed the regex pattern.
 # * 0.1.0 - Initial release
@@ -49,7 +50,7 @@ except ImportError:
 
 #! https://regex101.com/r/WivPsO/1
 #! https://regex101.com/r/b3UdM1/1 -> updated Regex Pattern
-pattern = r"\b\w{1,2}\s+((\-?|\+?)\d[,.]\d+\s+){3,3}"  # * independent of \n
+pattern = r"\b\w{1,2}\s+((\-?|\+?)\d+[,.]\d+\s+){3,3}"  # * independent of \n
 
 # * Old patterns:
 # pattern = r"\b\w\s+((-| )\d[,.]\d+\s+){3,3}"  # * independent of \n
@@ -101,14 +102,42 @@ def main():
 if __name__ == "__main__":
     choice = input("1) Run on local .xyz files 2) Specified .xyz file: ")
     if choice == "1":
-        files = [
-            f
-            for f in os.listdir(".")
-            if os.path.isfile(f)
-            and f.endswith(".xyz")
-            and not "xtbopt" in os.path.splitext(f)[0]
-            and not "std" in os.path.splitext(f)[0]
-        ]  # * makes sure that files that have been changed do not get added again
+        while True:
+            replace_bool = input(
+                "Do you want to replace exisiting converted files? (y/n) "
+            )
+            if replace_bool == "y":
+                files = [
+                    f if "std" not in f else os.remove(f)
+                    for f in os.listdir(".")
+                    if os.path.isfile(f)
+                    and f.endswith(".xyz")
+                    and not "xtbopt" in os.path.splitext(f)[0]
+                ]
+
+                files = [f for f in files if f != None]
+
+                break
+            if replace_bool == "n":
+                files = [
+                    f
+                    for f in os.listdir(".")
+                    if os.path.isfile(f)
+                    and f.endswith(".xyz")
+                    and not "xtbopt" in os.path.splitext(f)[0]
+                    and not "std" in os.path.splitext(f)[0]
+                ]  # * makes sure that files that have been changed do not get added again
+
+                std_files = [
+                    f for f in os.listdir(".") if "std" in f and f.endswith(".xyz")
+                ]
+
+                for f in std_files:
+                    os.rename(f, os.path.splitext(f)[0] + "_old.xyz")
+
+                break
+            else:
+                print("Pls enter a valid option. (y/n)")
         main()
 
     elif choice == "2":

@@ -24,6 +24,11 @@ and note the output:
 ```cmd
 .py=Python.File
 ```
+If not the output then:
+```cmd
+assoc .py=Python.File
+```
+
 Now you can change the association to the correct version of Python.
 ```cmd
 ftype Python.File="C:\Python310\python.exe" "%1"
