@@ -4,7 +4,7 @@
 """
 Author: Martin Dagleish (MRJD)
 
-Version 0.3.1
+Version 0.3.2
 
 This script converts the Chem3D Tinker xyz files to standard xyz files.
 This is needed in order to use the .xyz files for any other program.
@@ -34,6 +34,7 @@ SOFTWARE.
 """
 
 # * Changelog:
+# * 0.3.2 - Fixed the replace implementation and move old_std when new is created.
 # * 0.3.1 - Fixed bug for coordinates with double digits
 # * 0.3.0 - Simplified the code (unnecessary if statements removed) and prettified the print statements.
 # * 0.2.0 - Added fix for negative values for the number of atoms and renewed the regex pattern.
@@ -48,24 +49,26 @@ except ImportError:
     print("Please install re. (regular expressions for Python)")
     sys.exit(1)
 
-#! https://regex101.com/r/WivPsO/1
-#! https://regex101.com/r/b3UdM1/1 -> updated Regex Pattern
+#! https://regex101.com/r/1U1YsC/1 -> updated Regex Pattern
 pattern = r"\b\w{1,2}\s+((\-?|\+?)\d+[,.]\d+\s+){3,3}"  # * independent of \n
 
 # * Old patterns:
-# pattern = r"\b\w\s+((-| )\d[,.]\d+\s+){3,3}"  # * independent of \n
-# pattern2 = r"\b\w\s+((-| )\d[,.]\d+\s+){3,3}\n" #* not working!
 # lp_pattern = r"\bLp\s+((-| )\d[,.]\d+\s+){3,3}" # ! match the pattern for Lp -> https://regex101.com/r/Wt0mek/1
 regex = re.compile(pattern)
-
+VERSION = "0.3.2"
 
 def main():
     """
     Main function for running the script.
     """
     counter = 0
-    for filename in files:
-        with open(filename, "r", encoding="utf-8") as f:
+
+    for file_w_ext in files:
+
+        filename, ext = os.path.splitext(file_w_ext)
+        new_filename = filename + "_std" + ext
+
+        with open(file_w_ext, "r", encoding="utf-8") as f:
             lines = f.readlines()  # * read all lines
             lp_count = sum(
                 "Lp" in line for line in lines
@@ -78,7 +81,7 @@ def main():
                 lines[0] = str(abs(int(lines[0])))
             num_atoms = str(int(lines[0]) - lp_count - xx_count)  # * number of atoms
         with open(
-            os.path.splitext(filename)[0] + "_std.xyz", "w", encoding="utf-8"
+            new_filename, "w", encoding="utf-8"
         ) as f:
             f.write(num_atoms + "\n")  # * write the number of atoms
             f.write("\n")  # * write a blank line
@@ -93,7 +96,7 @@ def main():
                     f.write(match + "\n")
 
         print(
-            f"\n  Export of {filename} as {os.path.splitext(filename)[0] + '_std.xyz'} finished."
+            f"\n  Export of {filename + ext} as {new_filename} finished."
         )
         counter += 1
         print(f"  {counter} / {len(files)} files exported.")
