@@ -4,7 +4,7 @@
 """
 Author: Martin Dagleish (MRJD)
 
-Version 0.1.0
+Version 0.2.0
 
 This script converts the current Windows pwd to a WSL path with /mnt/c as the root.
 
@@ -32,16 +32,22 @@ SOFTWARE.
 """
 
 # * Changelog
+# * 0.2.0 - REWRITE and regex update 
 # * 0.1.0 - Initial release
 
-VERSION = "0.1.0"
+VERSION = "0.2.0"
 
-import os 
+import os
+import re
 from pathlib import Path
 
+def replacement(match):
+    return "/mnt/" + match.group(1).lower()
+
 cwd = Path.cwd()
-wsl_path = cwd.as_posix().replace("\\", "/")
-wsl_path = wsl_path.replace("C:", "/mnt/c")
+wsl_path = cwd.as_posix()
+
+wsl_path = re.sub(r"\b([A-Z])\:", replacement, wsl_path)
 
 print("\n", wsl_path, "\n")
 

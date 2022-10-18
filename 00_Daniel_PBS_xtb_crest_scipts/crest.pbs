@@ -1,0 +1,15 @@
+#!/bin/bash
+#PBS -q express
+#PBS -l nodes=1:ppn=2
+#PBS -l walltime=00:05:00
+#PBS -l pmem=550m
+#PBS -m e
+#ATHOS -o req-cpuset
+
+source /data.groups/rehbein/software/xtb-6.3.3/share/xtb/config_env.bash
+PATH=$PATH:/data.groups/rehbein/software/crest
+export PATH
+
+cd "${PBS_O_WORKDIR}"
+
+crest struc.xyz -T 2

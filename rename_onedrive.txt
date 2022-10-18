@@ -1,0 +1,13 @@
+Link: http://blog.becker.sc/2020/08/rename-onedrive-business-root-folder.html
+
+C:\Users\marti\AppData\Local\Microsoft\OneDrive\settings\Business1
+
+-> e2d6b43b-68f4-4926-9a8f-2df515dff819.ini 
+
+C:\Users\marti
+
+
+
+
+
+Computer\HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders
