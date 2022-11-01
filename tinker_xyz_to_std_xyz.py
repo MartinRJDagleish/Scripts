@@ -50,7 +50,7 @@ except ImportError:
     sys.exit(1)
 
 #! https://regex101.com/r/1U1YsC/1 -> updated Regex Pattern
-pattern = r"\b\w{1,2}\s+((\-?|\+?)\d+[,.]\d+\s+){3,3}"  # * independent of \n
+pattern = r"\b\w{1,2}\s+((\-|\+)?\d+[,.]\d+\s+){3,3}"  # * independent of \n
 
 # * Old patterns:
 # lp_pattern = r"\bLp\s+((-| )\d[,.]\d+\s+){3,3}" # ! match the pattern for Lp -> https://regex101.com/r/Wt0mek/1
