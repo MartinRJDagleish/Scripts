@@ -1,9 +1,0 @@
-# Infos von Daniel 
-
-Intel Compiler statt GNU Compiler für xTB verwenden -> siehe GitHub page 
-von xTB 
--> ifort statt gfort oder gcc 
-
-```bash
-export FC=ifort CC=icc
-```
