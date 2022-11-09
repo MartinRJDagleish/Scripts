@@ -1,4 +1,10 @@
-# Python Scripts are not running in Terminal
+# Scripts
+
+This repository is a collection of (mostly) python scripts which I wrote or collected 
+as means of automating tasks for numerous projects, such as my bachelor thesis 
+and a lot of computational chemistry projects.
+
+## Python Scripts are not running in Terminal
 
 If your scripts do not run anymore in the Terminal, but 
 are opened in VS Code. 
@@ -38,4 +44,3 @@ Syntax:
 ```cmd
 ftype <FileType>=<Path to executable> "%1"
 ```
-# Scripts
