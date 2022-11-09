@@ -4,7 +4,7 @@
 """
 Author: Martin Dagleish (MRJD)
 
-Version 0.2.4
+Version 0.2.5
 
 This is a wrapper script for the ORCA programme.
 
@@ -32,6 +32,7 @@ SOFTWARE.
 """
 
 # * Changelog
+# * 0.2.5 - Added more output to cwd (.out, .hess and .xyz files) 
 # * 0.2.4 - Switched os.system for subprocess.run in script and updated Windows 
 # * 0.2.3 - Added option to copy multiple xyz files to temp1 if wanted.
 # * 0.2.2 - Prettified printing of ORCA output.
@@ -39,7 +40,7 @@ SOFTWARE.
 # * 0.2.0 - Fixed Linux not working as stdout has to be written via python and not ">"
 # * 0.1.0 - Initial release
 
-VERSION = "0.2.4"
+VERSION = "0.2.5"
 
 import os
 import sys
@@ -177,18 +178,40 @@ if __name__ == "__main__":
 
     os.chdir("..")
     if OPERATING_SYTEM in ("win32", "Windows"):
-        subprocess.run(
-            ["copy", f"{temp1_path}\\{namespace}.out", cwd],
-            stdout=subprocess.PIPE,
-            shell=True,
-            check=True
-        )
+        copy_cmds = [
+            ("copy " + f"{temp1_path}\\{namespace}.{ext} " + cwd).split()
+            for ext in (
+                "out", 
+                "hess", 
+                "xyz"
+            )
+        ]
+        for cmd in copy_cmds:
+            subprocess.run(cmd, stdout=subprocess.PIPE, shell=True, check=True)
+        # * Previously
+        # subprocess.run(
+        #     ["copy", f"{temp1_path}\\{namespace}.out", cwd],
+        #     stdout=subprocess.PIPE,
+        #     shell=True,
+        #     check=True
+        # )
     elif OPERATING_SYTEM in ("linux", "Linux", "Darwin"):
-        subprocess.run(
-            ["cp", f"{temp1_path}/{namespace}.out", cwd],
-            stdout=subprocess.PIPE,
-            check=True
-        )
+        copy_cmds = [
+            ("cp " + f"{temp1_path}/{namespace}.{ext} " + cwd).split()
+            for ext in (
+                "out", 
+                "hess", 
+                "xyz"
+            )
+        ]
+        for cmd in copy_cmds:
+            subprocess.run(cmd, stdout=subprocess.PIPE, shell=True, check=True)
+        #* Previously
+        # subprocess.run(
+        #     ["cp", f"{temp1_path}/{namespace}.out", cwd],
+        #     stdout=subprocess.PIPE,
+        #     check=True
+        # )
 
     print(40 * "-")
     print("*" + "Output copied to CWD".center(38, " ") + "*")
