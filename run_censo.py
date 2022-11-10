@@ -4,7 +4,7 @@
 """
 Author: Martin Dagleish (MRJD)
 
-Version 0.2.6
+Version 0.2.7
 
 This is a wrapper script for the CENSO programme.
 
@@ -33,6 +33,7 @@ SOFTWARE.
 
 
 # * Changelog
+# * 0.2.7 - FIXED nuc_bool_dict and args.nucleus
 # * 0.2.6 - Adjusted the restart option to works as described by the author of CENSO. 
 # * 0.2.5 - Fixed namespace and restart option
 # * 0.2.4 - Added the restart flag and simpler solution for choosen nuclei in code
@@ -43,7 +44,7 @@ SOFTWARE.
 # * 0.1.1 - Fixed namespace error
 # * 0.1.0 - Initial release
 
-VERSION = "0.2.6"
+VERSION = "0.2.7"
 
 import os
 import sys
@@ -128,7 +129,8 @@ crest_parser.add_argument(
     "--solvent",  #! Positional argument
     metavar="SOLVENT",
     type=str,
-    help="The solvent to use in the calculation (default: ALPB).",
+    default="chcl3",
+    help="The solvent to use in the calculation (default: %(default)s).",
 )
 
 crest_parser.add_argument(
@@ -327,11 +329,14 @@ if __name__ == "__main__":
     # if not args.restart:
     nuc_bool_dict = {
         "1H": "off",
-        "13C:": "off",
+        "13C": "off",
         "19F": "off",
         "29Si": "off",
         "31P": "off",
     }
+
+    #* args.nucles is broken? 
+    args.nucles = args.nucles.split(",") #* fix? 
 
     for nuc in args.nucles:
         if "1H" in nuc:
@@ -345,6 +350,8 @@ if __name__ == "__main__":
         if "31P" in nuc:
             nuc_bool_dict["31P"] = "on"
 
+    # * DEBUGGING
+    # print(f"{args.nucles=}, {nuc_bool_dict=}")
     freq = args.freq
     if not isfloat(freq):
         print("Please enter a number for the frequency.")
