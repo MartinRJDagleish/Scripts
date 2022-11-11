@@ -4,7 +4,7 @@
 """
 Author: Martin Dagleish (MRJD)
 
-Version 0.2.7
+Version 0.2.8
 
 This is a wrapper script for the CENSO programme modified for ATHENE
 the HPC cluster at the University of Regensburg.
@@ -34,6 +34,7 @@ SOFTWARE.
 
 
 # * Changelog
+# * 0.2.8 - Added bins to path for .censorc
 # * 0.2.7 - FIXED nuc_bool_dict and args.nucleus
 # * 0.2.6 - Adjusted the restart option to works as described by the author of CENSO. 
 # * 0.2.5 - Fixed namespace and restart option
@@ -45,7 +46,7 @@ SOFTWARE.
 # * 0.1.1 - Fixed namespace error
 # * 0.1.0 - Initial release
 
-VERSION = "0.2.7"
+VERSION = "0.2.8"
 
 import os
 import sys
