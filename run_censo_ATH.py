@@ -370,10 +370,12 @@ if __name__ == "__main__":
         $CENSO global configuration file: .censorc
         $VERSION:1.2.0 
 
+        # for ORCA: DO NOT include bin to path
         ORCA: /data.groups/rehbein/software/orca5/orca_5_0_3_linux_x86-64_openmpi411
         ORCA version: 5.0.3
-        GFN-xTB: /home/dam63759/software_mrjd/grimme_pkgs
-        CREST: /home/dam63759/software_mrjd/grimme_pkgs 
+        # for rest: INCLUDE bin to path 
+        GFN-xTB: /home/dam63759/software_mrjd/grimme_pkgs/xtb
+        CREST: /home/dam63759/software_mrjd/grimme_pkgs/crest
         mpshift: /path/including/binary/mpshift-binary
         escf: /path/including/binary/escf-binary
 
