@@ -4,7 +4,7 @@
 """
 Author: Martin Dagleish (MRJD)
 
-Version 0.4.14
+Version 0.4.12
 
 This script is a wrapper for the XTB programme. It is designed 
 to be a modular and easy to use script for the user. 
@@ -36,9 +36,7 @@ SOFTWARE.
 """
 
 # * Changelog:
-# * 0.4.14 - Cleanup of code and made it more consistent.
-# * 0.4.13 - Added space in print to stdout
-# * 0.4.12 - Minor typos and bug fixes.
+# * 0.4.12 - Minor typos and bug fixes.  
 # * 0.4.11 - Added additional kwargs to pass to xtb (activate with --add) and fixed --opt to work as intended
 # * 0.4.10 - Added ESP option to script. (Visualization is not known yet -> potentially openbabel usage needed)
 # * 0.4.9 - Added UHF option to script.
@@ -62,7 +60,7 @@ SOFTWARE.
 # *       This is easier to use and more flexible.
 # * 0.1.0 - Initial release
 
-VERSION = "0.4.14"
+VERSION = "0.4.12"
 
 import os
 import sys
@@ -74,12 +72,12 @@ import sys
 try:
     import argparse
 except ImportError:
-    print("Please install argparse. E.g. 'pip install argparse'")
+    print("Please install argparse. Via pip install argparse")
     sys.exit(1)
 try:
     import subprocess
 except ImportError:
-    print("Please install subprocess. E.g. 'pip install subprocess'")
+    print("Please install subprocess. Via pip install subprocess")
     sys.exit(1)
 
 #!##############################################################################
@@ -90,6 +88,7 @@ except ImportError:
 # * Show the OS running this script
 OPERATING_SYTEM = sys.platform
 
+
 #! Part 1.1 -> Check if xtb and obabel are installed and then
 #! find the correct path to the xtb executable and store in variable
 # * Get the right xtb executable format depending on the OS
@@ -98,12 +97,12 @@ try:
         XTB_PATH = subprocess.run(
             ["which", "xtb"], stdout=subprocess.PIPE, check=True
         ).stdout.decode("utf-8")
-        xtb_bin = XTB_PATH.strip()
-    else:  # * Windows
+        xtb = XTB_PATH.strip()
+    elif OPERATING_SYTEM == "win32":
         XTB_PATH = subprocess.run(
             ["where.exe", "xtb"], stdout=subprocess.PIPE, check=True
         ).stdout.decode("utf-8")
-        xtb_bin = XTB_PATH.strip()
+        xtb = XTB_PATH.strip()
 except subprocess.CalledProcessError:
     print("xtb not found. Please install xtb and make sure it is added to PATH.")
     sys.exit(1)
@@ -115,16 +114,15 @@ try:
         OPENBABEL_PATH = subprocess.run(
             ["which", "obabel"], stdout=subprocess.PIPE, check=True
         ).stdout.decode("utf-8")
-        obabel_bin = OPENBABEL_PATH.strip()
-    else:  # * Windows
+        obabel = OPENBABEL_PATH.strip()
+    elif OPERATING_SYTEM == "win32":
         OPENBABEL_PATH = subprocess.run(
             ["where.exe", "obabel"], stdout=subprocess.PIPE, check=True
         ).stdout.decode("utf-8")
-        obabel_bin = OPENBABEL_PATH.strip()
+        obabel = OPENBABEL_PATH.strip()
 except subprocess.CalledProcessError:
     print(
-        "obabel not found. Please install OpenBabel and make sure it is added to PATH, \
-         if you want to use the full capability of this scipt."
+        "obabel not found. Please install OpenBabel and make sure it is added to PATH."
     )
     sys.exit(1)
 
@@ -140,6 +138,7 @@ xtb_parser = argparse.ArgumentParser(
     usage="%(prog)s xyz_file [options]",
     description=f"Run a XTB calculation for a given xyz file. \
         Optimization and frequency calculations are done per default. -> Script Version {VERSION}",
+    # formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
 xtb_parser.add_argument(
     "xyz_file",  #! Positional argument
@@ -150,8 +149,7 @@ xtb_parser.add_argument(
 xtb_parser.add_argument(
     "--opt",
     action="store_true",
-    help="If you only want to run the geometry optimization without frequency \
-        analysis / thermochemistry.",
+    help="If you only want to run the geometry optimization without frequency analysis / thermochemistry.",
 )
 xtb_parser.add_argument(
     "--hess",
@@ -213,8 +211,7 @@ xtb_parser.add_argument(
     "--uhf",
     type=int,
     metavar="MULT",
-    help="If you want to run in unrestricted Hartree Fock mode to account for \
-        non-Singulett states.",
+    help="If you want to run in unrestricted Hartree Fock mode to account for non-Singulett states.",
 )
 xtb_parser.add_argument(
     "--chem3d",
@@ -231,6 +228,14 @@ xtb_parser.add_argument(
     nargs=argparse.REMAINDER,
     help="Any remaining arguments are passed to XTB.",
 )
+#! Possible future options:
+# xtb_parser.add_argument(
+#     "--ir-spec-plot",
+#     "-ir-plot",
+#     action="store_true",
+#     help="Plot the IR spectrum."
+# )
+
 
 solvent_dict = {
     "acetone": ["acetone", "Aceton", "(CH3)2CO"],
@@ -279,7 +284,7 @@ def get_solvent(solvent_user_inp):
 
 # * Execute the parse_args() method
 args = xtb_parser.parse_args()
-addit_args = args.add
+add = args.add
 # print(inspect(args)) #* for debugging
 
 #! Run the calculation, acutal programm:
@@ -303,9 +308,9 @@ if __name__ == "__main__":
         options.append("--chrg")
         options.append("0")
 
-    # ? Add --parallel option ALWAYS, only the ncore changes
-    options.append("--parallel")
-    options.append(str(args.parallel))
+    if args.parallel > 1:
+        options.append("--parallel")
+        options.append(str(args.parallel))
 
     if args.verbose:
         options.append("--verbose")
@@ -353,10 +358,10 @@ if __name__ == "__main__":
         os.mkdir(temp1_path)
 
     # * copy .xyz file to temp1 folder
-    if OPERATING_SYTEM in ("linux", "linux2", "darwin"):
-        os.system(f"cp {xyz_file} {temp1_path}")
-    else:
+    if OPERATING_SYTEM == "win32":
         os.system(f"copy {xyz_file} {temp1_path}")
+    else:
+        os.system(f"cp {xyz_file} {temp1_path}")
 
     os.chdir(temp1_path)
 
@@ -365,33 +370,27 @@ if __name__ == "__main__":
     # ? you should not use os.system -> use subprocess.run instead
     # *---------------------------------#
     with open(f"{namespace}.out", "w", encoding="utf-8") as out:
-        if args.add:
+        if args.add: 
             subprocess.run(
-                [f"{xtb_bin}", f"{xyz_file}", *options, *addit_args],
-                stdout=out,
-                check=True,
-                text=True,  # * to capture stdout as string
+                [f"{xtb}", f"{xyz_file}", *options, *add], stdout=out, check=True, text=True
             )
-        else:
+        else: 
             subprocess.run(
-                [f"{xtb_bin}", f"{xyz_file}", *options],
-                stdout=out,
-                check=True,
-                text=True,  # * to capture stdout as string
+                [f"{xtb}", f"{xyz_file}", *options], stdout=out, check=True, text=True
             )
-
+            
     # os.system(f"{xtb} {xyz_file} --ohess {' '.join(options)}")
     # *---------------------------------#
 
-    print(36 * "-")
-    print("*" + "XTB RUN FINISHED!".center(34, " ") + "*")
-    print(36 * "-")
+    print(35 * "-")
+    print("*" + "XTB RUN FINISHED!".center(33, " ") + "*")
+    print(35 * "-")
 
     # * End of job
     # * 1. Run obabel to convert the output to .molden format
     # * 2. Move the '_FREQ.molden' file to the original folder
-
-    if args.opt:  # * if opt is selected, there is no need for obabel for conversion
+    
+    if args.opt: #* if opt is selected, there is no need for obabel for conversion 
         if not os.path.isfile(f"{namespace}.xtbopt.trj.xyz"):
             os.rename(f"{namespace}.xtbopt.log", f"{namespace}.xtbopt.trj.xyz")
         else:
@@ -421,12 +420,12 @@ if __name__ == "__main__":
             ]
             for cmd in copy_cmds:
                 subprocess.run(cmd, stdout=subprocess.PIPE, check=True)
-    else:
+    else: 
         # * Run obabel
         if OPERATING_SYTEM in ("win32", "Windows"):
             subprocess.run(
                 [
-                    obabel_bin,
+                    obabel,
                     f"{namespace}.g98.out",
                     "-i",
                     "g98",
@@ -442,7 +441,7 @@ if __name__ == "__main__":
         else:
             subprocess.run(
                 [
-                    obabel_bin,
+                    obabel,
                     f"{namespace}.g98.out",
                     "-i",
                     "g98",
@@ -487,9 +486,9 @@ if __name__ == "__main__":
             for cmd in copy_cmds:
                 subprocess.run(cmd, stdout=subprocess.PIPE, check=True)
 
-        print(36 * "-")
-        print("*" + "Importants files copied to CWD".center(34, " ") + "*")
-        print(36 * "-")
+        print(35 * "-")
+        print("*" + "Importants files copied to CWD".center(33, " ") + "*")
+        print(35 * "-")
 
     if args.chem3d:
         # * Additional conversion to "chem3d format"
@@ -501,7 +500,7 @@ if __name__ == "__main__":
         if OPERATING_SYTEM in ("win32", "Windows"):
             subprocess.run(
                 [
-                    obabel_bin,
+                    obabel,
                     f"{namespace}.xtbopt.xyz",
                     "-i",
                     "xyz",
@@ -517,7 +516,7 @@ if __name__ == "__main__":
         else:
             subprocess.run(
                 [
-                    obabel_bin,
+                    obabel,
                     f"{namespace}.xtbopt.xyz",
                     "-i",
                     "xyz",
