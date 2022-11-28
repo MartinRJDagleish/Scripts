@@ -211,7 +211,7 @@ xtb_parser.add_argument(
 )
 xtb_parser.add_argument(
     "--uhf",
-    type=int,
+    type=str,
     metavar="MULT",
     help="If you want to run in unrestricted Hartree Fock mode to account for \
         non-Singulett states.",
