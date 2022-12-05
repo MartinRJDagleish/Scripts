@@ -4,7 +4,7 @@
 """
 Author: Martin Dagleish (MRJD)
 
-Version 0.4.14
+Version 0.5.1
 
 This script is a wrapper for the XTB programme. It is designed 
 to be a modular and easy to use script for the user. 
@@ -36,6 +36,13 @@ SOFTWARE.
 """
 
 # * Changelog:
+# * 0.5.1  - Rewrote the whole script:
+# *        - Added booleans for OS, OPT, HESS and MD to make the code more readable.
+# *        - Added more ternay operators to make the code more readable and more compact.
+# *        - Added version option 
+# *        - Made the option more consistent. 
+# *        - Added input file options with automatic file type detection. (same namespace)
+# * 0.5.0  - Added MD functionality to the script. (--omd, --md and --input)
 # * 0.4.14 - Cleanup of code and made it more consistent.
 # * 0.4.13 - Added space in print to stdout
 # * 0.4.12 - Minor typos and bug fixes.
@@ -62,13 +69,12 @@ SOFTWARE.
 # *       This is easier to use and more flexible.
 # * 0.1.0 - Initial release
 
-VERSION = "0.4.14"
+VERSION = "0.5.1"
 
 import os
 import sys
 
 # from rich import inspect
-
 # * ↑ for debugging
 
 try:
@@ -89,21 +95,24 @@ except ImportError:
 
 # * Show the OS running this script
 OPERATING_SYTEM = sys.platform
+WIN_OS_BOOL = (
+    False if sys.platform in ("darwin", "linux", "linux2") else True
+)  # * Check if OS is Windows
 
 #! Part 1.1 -> Check if xtb and obabel are installed and then
 #! find the correct path to the xtb executable and store in variable
 # * Get the right xtb executable format depending on the OS
 try:
-    if OPERATING_SYTEM in ("linux", "linux2", "darwin"):
-        XTB_PATH = subprocess.run(
-            ["which", "xtb"], stdout=subprocess.PIPE, check=True
-        ).stdout.decode("utf-8")
-        xtb_bin = XTB_PATH.strip()
-    else:  # * Windows
-        XTB_PATH = subprocess.run(
+    XTB_PATH = (
+        subprocess.run(
             ["where.exe", "xtb"], stdout=subprocess.PIPE, check=True
         ).stdout.decode("utf-8")
-        xtb_bin = XTB_PATH.strip()
+        if WIN_OS_BOOL
+        else subprocess.run(
+            ["which", "xtb"], stdout=subprocess.PIPE, check=True
+        ).stdout.decode("utf-8")
+    )
+    xtb_bin = XTB_PATH.strip()
 except subprocess.CalledProcessError:
     print("xtb not found. Please install xtb and make sure it is added to PATH.")
     sys.exit(1)
@@ -111,16 +120,16 @@ except subprocess.CalledProcessError:
 
 #! Part 1.2 -> Search for OpenBabel (obabel) executable
 try:
-    if OPERATING_SYTEM in ("linux", "linux2", "darwin"):
-        OPENBABEL_PATH = subprocess.run(
-            ["which", "obabel"], stdout=subprocess.PIPE, check=True
-        ).stdout.decode("utf-8")
-        obabel_bin = OPENBABEL_PATH.strip()
-    else:  # * Windows
-        OPENBABEL_PATH = subprocess.run(
+    OPENBABEL_PATH = (
+        subprocess.run(
             ["where.exe", "obabel"], stdout=subprocess.PIPE, check=True
         ).stdout.decode("utf-8")
-        obabel_bin = OPENBABEL_PATH.strip()
+        if WIN_OS_BOOL
+        else subprocess.run(
+            ["which", "obabel"], stdout=subprocess.PIPE, check=True
+        ).stdout.decode("utf-8")
+    )
+    obabel_bin = OPENBABEL_PATH.strip()
 except subprocess.CalledProcessError:
     print(
         "obabel not found. Please install OpenBabel and make sure it is added to PATH, \
@@ -160,7 +169,7 @@ xtb_parser.add_argument(
     help="If you only want to run the frequency calculation without optimization.",
 )
 xtb_parser.add_argument(
-    "-c",
+    "-C",
     "--chrg",  #! Optional argument
     metavar="charge",
     type=int,
@@ -176,7 +185,7 @@ xtb_parser.add_argument(
     help="Number of cores for parallel calculation. (default: %(default)s)",
 )
 xtb_parser.add_argument(
-    "-n",
+    "-N",
     "--namespace",  #! Optional argument
     metavar="Name",
     type=str,
@@ -190,15 +199,15 @@ xtb_parser.add_argument(
     help="Longer output. (default: %(default)s)",
 )
 xtb_parser.add_argument(
-    "-lmo", action="store_true", help="Localization of orbitals."  #! Optional argument
+    "--lmo", action="store_true", help="Localization of orbitals."  #! Optional argument
 )
 xtb_parser.add_argument(
-    "-molden",
+    "--molden",
     action="store_true",
     help="Molden output for orbitals.",  #! Optional argument
 )
 xtb_parser.add_argument(
-    "-s",
+    "-S",
     "--solvent",
     metavar="SOLVENT",
     type=str,
@@ -227,10 +236,27 @@ xtb_parser.add_argument(
     help="Calculate the electrostatic potential on VdW-grid.",
 )
 xtb_parser.add_argument(
+    "--omd",
+    action="store_true",
+    help="Run and MD calculation, but optimize the geometry first.",
+)
+xtb_parser.add_argument(
+    "--md",
+    action="store_true",
+    help="Run and MD calculation wihout optimization first.",
+)
+xtb_parser.add_argument(
+    "--input",
+    metavar="INPUT",
+    type=str,
+    help="The input file to change parameters for the calculation. In the Turbomole (xcoord) format.",
+)
+xtb_parser.add_argument(
     "--add",
     nargs=argparse.REMAINDER,
     help="Any remaining arguments are passed to XTB.",
 )
+xtb_parser.add_argument("--version", action="version", version=f"{VERSION}")
 
 solvent_dict = {
     "acetone": ["acetone", "Aceton", "(CH3)2CO"],
@@ -279,7 +305,7 @@ def get_solvent(solvent_user_inp):
 
 # * Execute the parse_args() method
 args = xtb_parser.parse_args()
-addit_args = args.add
+addit_args = args.add if args.add else []
 # print(inspect(args)) #* for debugging
 
 #! Run the calculation, acutal programm:
@@ -289,12 +315,69 @@ if __name__ == "__main__":
 
     # * Gather the options for the calculation
     options = []
-    if args.hess:
-        options.append("--hess")
-    elif args.opt:
-        options.append("--opt")
+
+    # * Define and check the name of the job (needed for input file)
+    if args.namespace:  #! If the user has defined a namespace, use it
+        namespace = args.namespace
+        options.append("--namespace")
+        options.append(namespace)
+    else:  #! If not, use the name of the xyz file
+        namespace = os.path.splitext(os.path.basename(xyz_file))[0]
+        options.append("--namespace")
+        options.append(namespace)  # * this has to be a new entry
+
+    # * Check if the user added an input file manually
+    if args.input:
+        options.append("--input")
+        # * Check if the input file exists and is a file
+        if os.path.isfile(args.input):
+            input_file = os.path.basename(args.input)
+            options.append(input_file)
+        else:
+            print(f"The input file {args.input} does not exist.")
+            sys.exit(1)
+
+    # * The type of job: (O)MD, GeoOpt, SP, Hess,
+    job_type = []
+
+    OPT_BOOL, HESS_BOOL = True, True
+    MD_BOOL = False
+
+    if args.omd:
+        job_type.append("--omd")
+        HESS_BOOL, MD_BOOL = False, True
+        if not args.input:
+            if os.path.isfile(os.path.join(cwd, f"{namespace}.inp")):
+                # * If no input file is given, search for .inp with namespace as xyz_file
+                options.append("--input")
+                options.append(f"{namespace}.inp")
+                input_file = args.input = f"{namespace}.inp"
+            else:
+                print("You need to specify an input file for the MD calculation.")
+                sys.exit(1)
+    elif args.md:
+        job_type.append("--md")
+        OPT_BOOL, HESS_BOOL, MD_BOOL = False, False, True
+        if not args.input:
+            if os.path.isfile(os.path.join(cwd, f"{namespace}.inp")):
+                # * If no input file is given, search for .inp with namespace as xyz_file
+                options.append("--input")
+                options.append(f"{namespace}.inp")
+                input_file = args.input = f"{namespace}.inp"
+            else:
+                print("You need to specify an input file for the MD calculation.")
+                sys.exit(1)
     else:
-        options.append("--ohess")
+        if args.hess:
+            job_type.append("--hess")
+            OPT_BOOL = False
+        elif args.opt:
+            job_type.append("--opt")
+            HESS_BOOL = False
+        else:
+            job_type.append("--ohess")
+        # * Why would one do a SP with XTB? -> not implemented
+        # * use xtb direct call instead …
 
     if args.chrg:
         options.append("--chrg")
@@ -338,49 +421,46 @@ if __name__ == "__main__":
         options.append("--uhf")
         options.append(multip)
 
-    if args.namespace:
-        namespace = args.namespace
-        options.append("--namespace")
-        options.append(namespace)  # * this has to be a new entry
-    else:
-        namespace = os.path.splitext(os.path.basename(xyz_file))[0]
-        options.append("--namespace")
-        options.append(namespace)  # * this has to be a new entry
-
     # * mkdir temp1 folder for xtb files
     temp1_path = os.path.join(cwd, "temp1")
     if not os.path.isdir(temp1_path):
         os.mkdir(temp1_path)
 
     # * copy .xyz file to temp1 folder
-    if OPERATING_SYTEM in ("linux", "linux2", "darwin"):
-        os.system(f"cp {xyz_file} {temp1_path}")
-    else:
+    _ = (
         os.system(f"copy {xyz_file} {temp1_path}")
+        if WIN_OS_BOOL
+        else os.system(f"cp {xyz_file} {temp1_path}")
+    )
 
+    # * copy input file (if exists) to temp1 folder
+    if args.input:
+        _ = (
+            os.system(f"copy {input_file} {temp1_path}")
+            if WIN_OS_BOOL
+            else os.system(f"cp {input_file} {temp1_path}")
+        )
+
+    ############################
+    # * change to temp1 folder
+    ############################
     os.chdir(temp1_path)
 
     # *---------------------------------#
     # * Run the calculation
     # ? you should not use os.system -> use subprocess.run instead
     # *---------------------------------#
-    with open(f"{namespace}.out", "w", encoding="utf-8") as out:
-        if args.add:
-            subprocess.run(
-                [f"{xtb_bin}", f"{xyz_file}", *options, *addit_args],
-                stdout=out,
-                check=True,
-                text=True,  # * to capture stdout as string
-            )
-        else:
-            subprocess.run(
-                [f"{xtb_bin}", f"{xyz_file}", *options],
-                stdout=out,
-                check=True,
-                text=True,  # * to capture stdout as string
-            )
 
-    # os.system(f"{xtb} {xyz_file} --ohess {' '.join(options)}")
+    xtb_call_cmds = [f"{xtb_bin}", f"{xyz_file}", *job_type, *options, *addit_args]
+    # * if addit_args is empty it is ignored
+    with open(f"{namespace}.out", "w", encoding="utf-8") as out:
+        subprocess.run(
+            xtb_call_cmds,
+            stdout=out,
+            check=True,
+            shell=WIN_OS_BOOL,
+            text=True,  # * to capture stdout as string
+        )
     # *---------------------------------#
 
     print(36 * "-")
@@ -388,109 +468,72 @@ if __name__ == "__main__":
     print(36 * "-")
 
     # * End of job
-    # * 1. Run obabel to convert the output to .molden format
+    # * 1. Run obabel to convert the output to .molden format if HESS_BOOL is True
     # * 2. Move the '_FREQ.molden' file to the original folder
 
-    if args.opt:  # * if opt is selected, there is no need for obabel for conversion
+    # *--------------------------------------------#
+    # * Run rename of xtbopt.log for OPT jobs only
+    # *--------------------------------------------#
+    if OPT_BOOL:
         if not os.path.isfile(f"{namespace}.xtbopt.trj.xyz"):
             os.rename(f"{namespace}.xtbopt.log", f"{namespace}.xtbopt.trj.xyz")
         else:
             os.remove(f"{namespace}.xtbopt.trj.xyz")
             os.rename(f"{namespace}.xtbopt.log", f"{namespace}.xtbopt.trj.xyz")
 
-        os.chdir("..")
-        if OPERATING_SYTEM in ("win32", "Windows"):
-            copy_cmds = [
-                ("copy " + f"{temp1_path}\\{namespace}{ext} " + cwd).split()
-                for ext in (
-                    ".out",
-                    ".xtbopt.trj.xyz",
-                    ".xtbopt.xyz",
-                )  #! Copy the output files to the original folder
-            ]
-            for cmd in copy_cmds:
-                subprocess.run(cmd, stdout=subprocess.PIPE, shell=True, check=True)
-        elif OPERATING_SYTEM in ("linux", "Linux", "Darwin"):
-            copy_cmds = [
-                ("cp " + f"{temp1_path}/{namespace}{ext} " + cwd).split()
-                for ext in (
-                    ".out",
-                    ".xtbopt.trj.xyz",
-                    ".xtbopt.xyz",
-                )  #! Copy the output files to the original folder
-            ]
-            for cmd in copy_cmds:
-                subprocess.run(cmd, stdout=subprocess.PIPE, check=True)
-    else:
-        # * Run obabel
-        if OPERATING_SYTEM in ("win32", "Windows"):
-            subprocess.run(
-                [
-                    obabel_bin,
-                    f"{namespace}.g98.out",
-                    "-i",
-                    "g98",
-                    "-o",
-                    "molden",
-                    "-O",
-                    f"{namespace}_FREQ.molden",
-                ],
-                stdout=subprocess.PIPE,
-                shell=True,
-                check=True,
+        copy_file_list = [
+            f"{temp1_path}\\{namespace}{ext}"
+            for ext in (
+                ".out",
+                ".xtbopt.trj.xyz",
+                ".xtbopt.xyz",
             )
-        else:
-            subprocess.run(
-                [
-                    obabel_bin,
-                    f"{namespace}.g98.out",
-                    "-i",
-                    "g98",
-                    "-o",
-                    "molden",
-                    "-O",
-                    f"{namespace}_FREQ.molden",
-                ],
-                stdout=subprocess.PIPE,
-                check=True,
-            )
+        ]
 
-        if not os.path.isfile(f"{namespace}.xtbopt.trj.xyz"):
-            os.rename(f"{namespace}.xtbopt.log", f"{namespace}.xtbopt.trj.xyz")
-        else:
-            os.remove(f"{namespace}.xtbopt.trj.xyz")
-            os.rename(f"{namespace}.xtbopt.log", f"{namespace}.xtbopt.trj.xyz")
+    if HESS_BOOL:
+        subprocess.run(
+            [
+                obabel_bin,
+                f"{namespace}.g98.out",
+                "-i",
+                "g98",
+                "-o",
+                "molden",
+                "-O",
+                f"{namespace}_FREQ.molden",
+            ],
+            stdout=subprocess.PIPE,
+            check=True,
+            shell=WIN_OS_BOOL,
+        )
 
-        os.chdir("..")
-        if OPERATING_SYTEM in ("win32", "Windows"):
-            copy_cmds = [
-                ("copy " + f"{temp1_path}\\{namespace}{ext} " + cwd).split()
-                for ext in (
-                    ".out",
-                    "_FREQ.molden",
-                    ".xtbopt.trj.xyz",
-                    ".xtbopt.xyz",
-                )  #! Copy the output files to the original folder
-            ]
-            for cmd in copy_cmds:
-                subprocess.run(cmd, stdout=subprocess.PIPE, shell=True, check=True)
-        elif OPERATING_SYTEM in ("linux", "Linux", "Darwin"):
-            copy_cmds = [
-                ("cp " + f"{temp1_path}/{namespace}{ext} " + cwd).split()
-                for ext in (
-                    ".out",
-                    "_FREQ.molden",
-                    ".xtbopt.trj.xyz",
-                    ".xtbopt.xyz",
-                )  #! Copy the output files to the original folder
-            ]
-            for cmd in copy_cmds:
-                subprocess.run(cmd, stdout=subprocess.PIPE, check=True)
+        if args.hess:
+            copy_file_list = []
 
-        print(36 * "-")
-        print("*" + "Importants files copied to CWD".center(34, " ") + "*")
-        print(36 * "-")
+        copy_file_list.append(f"{temp1_path}\\{namespace}_FREQ.molden")
 
+    if MD_BOOL:
+        trj_filename = f"{namespace}.xtb.trj"
+        # * rename the xtb.trj file to .xtb.trj.xyz
+        os.rename(trj_filename, f"{namespace}.xtb.trj.xyz")
+        # * add the .xtb.trj.xyz file to the copy list
+        copy_file_list.append((f"{temp1_path}\\{namespace}.xtb.trj.xyz " + cwd).split())
+
+    os.chdir("..")
+
+    copy_cmds = [
+        ("copy " + filename + " " + cwd).split()
+        if WIN_OS_BOOL
+        else ("cp " + filename + " " + cwd).split()
+        for filename in copy_file_list
+    ]
+    _ = [subprocess.run(cmd, check=True, shell=WIN_OS_BOOL) for cmd in copy_cmds]
+
+    print(37 * "-")
+    print("*" + "Importants files copied to CWD".center(35, " ") + "*")
+    print(37 * "-")
+
+    # * OLD CODE
     if args.chem3d:
         # * Additional conversion to "chem3d format"
         print(45 * "-")
@@ -498,37 +541,21 @@ if __name__ == "__main__":
         print(45 * "-")
 
         # * Run obabel
-        if OPERATING_SYTEM in ("win32", "Windows"):
-            subprocess.run(
-                [
-                    obabel_bin,
-                    f"{namespace}.xtbopt.xyz",
-                    "-i",
-                    "xyz",
-                    "-o",
-                    "txyz",
-                    "-O",
-                    f"{namespace}_tinker.xyz",
-                ],
-                stdout=subprocess.PIPE,
-                shell=True,
-                check=True,
-            )
-        else:
-            subprocess.run(
-                [
-                    obabel_bin,
-                    f"{namespace}.xtbopt.xyz",
-                    "-i",
-                    "xyz",
-                    "-o",
-                    "txyz",
-                    "-O",
-                    f"{namespace}_tinker.xyz",
-                ],
-                stdout=subprocess.PIPE,
-                check=True,
-            )
+        subprocess.run(
+            [
+                obabel_bin,
+                f"{namespace}.xtbopt.xyz",
+                "-i",
+                "xyz",
+                "-o",
+                "txyz",
+                "-O",
+                f"{namespace}_tinker.xyz",
+            ],
+            stdout=subprocess.PIPE,
+            check=True,
+            shell=WIN_OS_BOOL,
+        )
 
         print(45 * "-")
         print("*" + "Conversion to chem3d format done".center(43, " ") + "*")
