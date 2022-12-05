@@ -4,7 +4,7 @@
 """
 Author: Martin Dagleish (MRJD)
 
-Version 0.5.1
+Version 0.5.2
 
 This script is a wrapper for the XTB programme. It is designed 
 to be a modular and easy to use script for the user. 
@@ -36,6 +36,7 @@ SOFTWARE.
 """
 
 # * Changelog:
+# * 0.5.2  - Fixed copy_file_list typo for MD option 
 # * 0.5.1  - Rewrote the whole script:
 # *        - Added booleans for OS, OPT, HESS and MD to make the code more readable.
 # *        - Added more ternay operators to make the code more readable and more compact.
@@ -69,7 +70,7 @@ SOFTWARE.
 # *       This is easier to use and more flexible.
 # * 0.1.0 - Initial release
 
-VERSION = "0.5.1"
+VERSION = "0.5.2"
 
 import os
 import sys
@@ -517,7 +518,7 @@ if __name__ == "__main__":
         # * rename the xtb.trj file to .xtb.trj.xyz
         os.rename(trj_filename, f"{namespace}.xtb.trj.xyz")
         # * add the .xtb.trj.xyz file to the copy list
-        copy_file_list.append((f"{temp1_path}\\{namespace}.xtb.trj.xyz " + cwd).split())
+        copy_file_list.append(f"{temp1_path}\\{namespace}.xtb.trj.xyz")
 
     os.chdir("..")
 
