@@ -4,7 +4,7 @@
 """
 Author: Martin Dagleish (MRJD)
 
-Version 0.5.4
+Version 0.5.5
 
 This script is a wrapper for the XTB programme. It is designed 
 to be a modular and easy to use script for the user. 
@@ -36,14 +36,15 @@ SOFTWARE.
 """
 
 # * Changelog:
-# * 0.5.4  - Fixed "copy_file_list" not defined error -> default list is defined globally 
-# * 0.5.3  - Edge case with hess option fixed (correct files copied) and new_trj_filename added 
-# * 0.5.2  - Fixed copy_file_list typo for MD option 
+# * 0.5.5  - Styling
+# * 0.5.4  - Fixed "copy_file_list" not defined error -> default list is defined globally
+# * 0.5.3  - Edge case with hess option fixed (correct files copied) and new_trj_filename added
+# * 0.5.2  - Fixed copy_file_list typo for MD option
 # * 0.5.1  - Rewrote the whole script:
 # *        - Added booleans for OS, OPT, HESS and MD to make the code more readable.
 # *        - Added more ternay operators to make the code more readable and more compact.
-# *        - Added version option 
-# *        - Made the option more consistent. 
+# *        - Added version option
+# *        - Made the option more consistent.
 # *        - Added input file options with automatic file type detection. (same namespace)
 # * 0.5.0  - Added MD functionality to the script. (--omd, --md and --input)
 # * 0.4.14 - Cleanup of code and made it more consistent.
@@ -72,7 +73,7 @@ SOFTWARE.
 # *       This is easier to use and more flexible.
 # * 0.1.0 - Initial release
 
-VERSION = "0.5.4"
+VERSION = "0.5.5"
 
 import os
 import sys
@@ -415,7 +416,8 @@ if __name__ == "__main__":
                 raise ValueError("Solvent not found")
         except ValueError:
             print(
-                f"The solvent '{args.solvent}' is not supported.\nPossible solvents are:\n\n {', '.join(solvent_dict.keys())}"
+                f"The solvent '{args.solvent}' is not supported.\n\
+                  Possible solvents are:\n\n {', '.join(solvent_dict.keys())}"
             )
             sys.exit(1)
 
@@ -485,7 +487,7 @@ if __name__ == "__main__":
             ".xtbopt.xyz",
         )
     ]
-    
+
     if OPT_BOOL:
         if not os.path.isfile(f"{namespace}.xtbopt.trj.xyz"):
             os.rename(f"{namespace}.xtbopt.log", f"{namespace}.xtbopt.trj.xyz")
@@ -514,7 +516,9 @@ if __name__ == "__main__":
 
         if args.hess:
             copy_file_list = []
-            copy_file_list.append(f"{temp1_path}\\{namespace}.out") # only in pure hess run needed 
+            copy_file_list.append(
+                f"{temp1_path}\\{namespace}.out"
+            )  # only in pure hess run needed
 
         copy_file_list.append(f"{temp1_path}\\{namespace}_FREQ.molden")
 
