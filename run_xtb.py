@@ -4,7 +4,7 @@
 """
 Author: Martin Dagleish (MRJD)
 
-Version 0.5.2
+Version 0.5.4
 
 This script is a wrapper for the XTB programme. It is designed 
 to be a modular and easy to use script for the user. 
@@ -36,6 +36,8 @@ SOFTWARE.
 """
 
 # * Changelog:
+# * 0.5.4  - Fixed "copy_file_list" not defined error -> default list is defined globally 
+# * 0.5.3  - Edge case with hess option fixed (correct files copied) and new_trj_filename added 
 # * 0.5.2  - Fixed copy_file_list typo for MD option 
 # * 0.5.1  - Rewrote the whole script:
 # *        - Added booleans for OS, OPT, HESS and MD to make the code more readable.
@@ -70,7 +72,7 @@ SOFTWARE.
 # *       This is easier to use and more flexible.
 # * 0.1.0 - Initial release
 
-VERSION = "0.5.2"
+VERSION = "0.5.4"
 
 import os
 import sys
@@ -475,6 +477,15 @@ if __name__ == "__main__":
     # *--------------------------------------------#
     # * Run rename of xtbopt.log for OPT jobs only
     # *--------------------------------------------#
+
+    copy_file_list = [
+        f"{temp1_path}\\{namespace}{ext}"
+        for ext in (
+            ".out",
+            ".xtbopt.xyz",
+        )
+    ]
+    
     if OPT_BOOL:
         if not os.path.isfile(f"{namespace}.xtbopt.trj.xyz"):
             os.rename(f"{namespace}.xtbopt.log", f"{namespace}.xtbopt.trj.xyz")
@@ -482,14 +493,7 @@ if __name__ == "__main__":
             os.remove(f"{namespace}.xtbopt.trj.xyz")
             os.rename(f"{namespace}.xtbopt.log", f"{namespace}.xtbopt.trj.xyz")
 
-        copy_file_list = [
-            f"{temp1_path}\\{namespace}{ext}"
-            for ext in (
-                ".out",
-                ".xtbopt.trj.xyz",
-                ".xtbopt.xyz",
-            )
-        ]
+        copy_file_list.append(f"{temp1_path}\\{namespace}.xtbopt.trj.xyz")
 
     if HESS_BOOL:
         subprocess.run(
@@ -510,15 +514,17 @@ if __name__ == "__main__":
 
         if args.hess:
             copy_file_list = []
+            copy_file_list.append(f"{temp1_path}\\{namespace}.out") # only in pure hess run needed 
 
         copy_file_list.append(f"{temp1_path}\\{namespace}_FREQ.molden")
 
     if MD_BOOL:
         trj_filename = f"{namespace}.xtb.trj"
+        new_trj_filename = f"{namespace}.xtb.trj.xyz"
         # * rename the xtb.trj file to .xtb.trj.xyz
-        os.rename(trj_filename, f"{namespace}.xtb.trj.xyz")
+        os.rename(trj_filename, new_trj_filename)
         # * add the .xtb.trj.xyz file to the copy list
-        copy_file_list.append(f"{temp1_path}\\{namespace}.xtb.trj.xyz")
+        copy_file_list.append(f"{temp1_path}\\{new_trj_filename}")
 
     os.chdir("..")
 
