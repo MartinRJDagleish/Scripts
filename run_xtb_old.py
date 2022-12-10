@@ -4,7 +4,7 @@
 """
 Author: Martin Dagleish (MRJD)
 
-Version 0.5.6
+Version 0.5.5
 
 This script is a wrapper for the XTB programme. It is designed 
 to be a modular and easy to use script for the user. 
@@ -36,7 +36,6 @@ SOFTWARE.
 """
 
 # * Changelog:
-# * 0.5.6  - Refactored code and move many subroutines to separate file. 
 # * 0.5.5  - Styling
 # * 0.5.4  - Fixed "copy_file_list" not defined error -> default list is defined globally
 # * 0.5.3  - Edge case with hess option fixed (correct files copied) and new_trj_filename added
@@ -74,10 +73,13 @@ SOFTWARE.
 # *       This is easier to use and more flexible.
 # * 0.1.0 - Initial release
 
-VERSION = "0.5.6"
+VERSION = "0.5.5"
 
-import os 
-import sys 
+import os
+import sys
+
+# from rich import inspect
+# * ↑ for debugging
 
 try:
     import argparse
@@ -90,10 +92,60 @@ except ImportError:
     print("Please install subprocess. E.g. 'pip install subprocess'")
     sys.exit(1)
 
-import run_calc_mrjd as mrjd # * My own module with subroutines
+#!##############################################################################
+#!                                 PART 1                                      #
+#!##############################################################################
+#! Check if programms are all installed in order for the script to work.
 
-# from rich import inspect
-# * ↑ for debugging
+# * Show the OS running this script
+OPERATING_SYTEM = sys.platform
+WIN_OS_BOOL = (
+    False if sys.platform in ("darwin", "linux", "linux2") else True
+)  # * Check if OS is Windows
+
+#! Part 1.1 -> Check if xtb and obabel are installed and then
+#! find the correct path to the xtb executable and store in variable
+# * Get the right xtb executable format depending on the OS
+try:
+    XTB_PATH = (
+        subprocess.run(
+            ["where.exe", "xtb"], stdout=subprocess.PIPE, check=True
+        ).stdout.decode("utf-8")
+        if WIN_OS_BOOL
+        else subprocess.run(
+            ["which", "xtb"], stdout=subprocess.PIPE, check=True
+        ).stdout.decode("utf-8")
+    )
+    xtb_bin = XTB_PATH.strip()
+except subprocess.CalledProcessError:
+    print("xtb not found. Please install xtb and make sure it is added to PATH.")
+    sys.exit(1)
+
+
+#! Part 1.2 -> Search for OpenBabel (obabel) executable
+try:
+    OPENBABEL_PATH = (
+        subprocess.run(
+            ["where.exe", "obabel"], stdout=subprocess.PIPE, check=True
+        ).stdout.decode("utf-8")
+        if WIN_OS_BOOL
+        else subprocess.run(
+            ["which", "obabel"], stdout=subprocess.PIPE, check=True
+        ).stdout.decode("utf-8")
+    )
+    obabel_bin = OPENBABEL_PATH.strip()
+except subprocess.CalledProcessError:
+    print(
+        "obabel not found. Please install OpenBabel and make sure it is added to PATH, \
+         if you want to use the full capability of this scipt."
+    )
+    sys.exit(1)
+
+
+#!##############################################################################
+#!                                 PART 2                                      #
+#!##############################################################################
+#! Create parser to get the arguments from the command line.
 
 # * Create the parser
 xtb_parser = argparse.ArgumentParser(
@@ -210,6 +262,50 @@ xtb_parser.add_argument(
 )
 xtb_parser.add_argument("--version", action="version", version=f"{VERSION}")
 
+solvent_dict = {
+    "acetone": ["acetone", "Aceton", "(CH3)2CO"],
+    "acetonitrile": ["acetonitrile", "ACN", "Acetonitrile", "Acetonitril", "AcN"],
+    "aniline": ["aniline", "ANI", "Aniline", "Anil"],
+    "benzaldehyde": ["benzaldehyde", "BEN", "Benzaldehyde", "Benzal", "Benzaldehyd"],
+    "benzene": ["benzene", "Benzene", "Benzol"],
+    "ch2cl2": ["ch2cl2", "CH2CL2", "DCM", "Dichloromethane", "Dichlormethan"],
+    "chcl3": ["chcl3", "CHCL3", "Chloroform", "Chloroforme", "chloroform"],
+    "ccl4": ["ccl4", "CCl4", "Carbontet", "Tetrachlormethan"],
+    "cs2": ["cs2", "CS2", "Carbonsulfide", "Carbonsulfid", "carbonsulfide"],
+    "dioxane": ["dioxane", "Dioxane", "Dioxal"],
+    "dmf": ["dmf", "DMF", "Dimethylformamide", "Dimethylformamid", "dimethylformamide"],
+    "dmso": ["dmso", "DMSO", "Me2SO"],
+    "ether": ["ether", "ETHER", "Ether", "diethylether", "Diethylether"],
+    "ethylacetate": ["ethylacetate", "ETAC", "Ethylacetat", "Ethylacetate"],
+    "furane": ["furane", "FUR", "Furan"],
+    "h2o": [
+        "water",
+        "WAT",
+        "Water",
+        "Wasser",
+        "H2O",
+        "h2o",
+    ],  #! This was wrong -> "h2o" not "water"
+    "hexandecane": ["hexandecane", "HEX", "Hexandecane"],
+    "hexane": ["hexane", "HEX", "Hexane", "Hexan"],
+    "methanol": ["methanol", "METH", "Methanol"],
+    "nitromethane": ["nitromethane", "NIT", "Nitromethane", "Nitromethan"],
+    "octanol": ["octanol", "OCT", "Oct-OH"],
+    "woctanol": ["woctanol", "WOCT", "Water octanol", "Wasser_Octanol"],
+    "phenol": ["phenol", "PHEN", "Phenol"],
+    "toluene": ["toluene", "TOL", "Toluene", "Toluol"],
+    "thf": ["thf", "THF", "Tetrahydrofuran", "tetrahydrofurane"],
+}
+
+
+def get_solvent(solvent_user_inp):
+    """
+    Helper function for solvent from solvent_dict.
+    """
+    for solvent, solvent_names in solvent_dict.items():
+        if solvent_user_inp in solvent_names:
+            return solvent
+
 
 # * Execute the parse_args() method
 args = xtb_parser.parse_args()
@@ -312,7 +408,7 @@ if __name__ == "__main__":
 
     if args.solvent:
         try:
-            SOLVENT = mrjd.get_solvent(args.solvent)
+            SOLVENT = get_solvent(args.solvent)
             if SOLVENT:
                 options.append("--alpb")
                 options.append(SOLVENT)
@@ -330,31 +426,60 @@ if __name__ == "__main__":
         options.append("--uhf")
         options.append(multip)
 
-    
-    # *---------------------------------#
-    # * MAIN PROCEDURE STARTS HERE
-    # *---------------------------------#
-    
-    temp1_path = mrjd.create_temp1_folder(cwd)
+    # * mkdir temp1 folder for xtb files
+    temp1_path = os.path.join(cwd, "temp1")
+    if not os.path.isdir(temp1_path):
+        os.mkdir(temp1_path)
+
     # * copy .xyz file to temp1 folder
-    mrjd.copy_file_temp(temp1_path, xyz_file)
-    
+    _ = (
+        os.system(f"copy {xyz_file} {temp1_path}")
+        if WIN_OS_BOOL
+        else os.system(f"cp {xyz_file} {temp1_path}")
+    )
+
     # * copy input file (if exists) to temp1 folder
     if args.input:
-        mrjd.copy_file_temp(temp1_path, input_file) 
+        _ = (
+            os.system(f"copy {input_file} {temp1_path}")
+            if WIN_OS_BOOL
+            else os.system(f"cp {input_file} {temp1_path}")
+        )
 
+    ############################
+    # * change to temp1 folder
+    ############################
     os.chdir(temp1_path)
 
     # *---------------------------------#
     # * Run the calculation
+    # ? you should not use os.system -> use subprocess.run instead
     # *---------------------------------#
 
-    mrjd.xtb_call(xyz_file, job_type, options, namespace, addit_args) 
+    xtb_call_cmds = [f"{xtb_bin}", f"{xyz_file}", *job_type, *options, *addit_args]
+    # * if addit_args is empty it is ignored
+    with open(f"{namespace}.out", "w", encoding="utf-8") as out:
+        subprocess.run(
+            xtb_call_cmds,
+            stdout=out,
+            check=True,
+            shell=WIN_OS_BOOL,
+            text=True,  # * to capture stdout as string
+        )
+    # *---------------------------------#
+
+    print(36 * "-")
+    print("*" + "XTB RUN FINISHED!".center(34, " ") + "*")
+    print(36 * "-")
+
+    # * End of job
+    # * 1. Run obabel to convert the output to .molden format if HESS_BOOL is True
+    # * 2. Move the '_FREQ.molden' file to the original folder
 
     # *--------------------------------------------#
     # * Run rename of xtbopt.log for OPT jobs only
     # *--------------------------------------------#
-    
+
     copy_file_list = [
         f"{temp1_path}\\{namespace}{ext}"
         for ext in (
@@ -364,13 +489,18 @@ if __name__ == "__main__":
     ]
 
     if OPT_BOOL:
-        renamed_file = mrjd.rename_file(namespace, "xtbopt.log", "xtbopt.trj.xyz")
-        copy_file_list.append(os.path.join(temp1_path, renamed_file))
+        if not os.path.isfile(f"{namespace}.xtbopt.trj.xyz"):
+            os.rename(f"{namespace}.xtbopt.log", f"{namespace}.xtbopt.trj.xyz")
+        else:
+            os.remove(f"{namespace}.xtbopt.trj.xyz")
+            os.rename(f"{namespace}.xtbopt.log", f"{namespace}.xtbopt.trj.xyz")
+
+        copy_file_list.append(f"{temp1_path}\\{namespace}.xtbopt.trj.xyz")
 
     if HESS_BOOL:
         subprocess.run(
             [
-                mrjd.obabel_bin,
+                obabel_bin,
                 f"{namespace}.g98.out",
                 "-i",
                 "g98",
@@ -381,7 +511,7 @@ if __name__ == "__main__":
             ],
             stdout=subprocess.PIPE,
             check=True,
-            shell=mrjd.WIN_OS_BOOL,
+            shell=WIN_OS_BOOL,
         )
 
         if args.hess:
@@ -393,12 +523,22 @@ if __name__ == "__main__":
         copy_file_list.append(f"{temp1_path}\\{namespace}_FREQ.molden")
 
     if MD_BOOL:
-        renamed_file = mrjd.rename_file(namespace, "xtb.trj", "xtb.trj.xyz")
-        copy_file_list.append(f"{temp1_path}\\{renamed_file}")
+        trj_filename = f"{namespace}.xtb.trj"
+        new_trj_filename = f"{namespace}.xtb.trj.xyz"
+        # * rename the xtb.trj file to .xtb.trj.xyz
+        os.rename(trj_filename, new_trj_filename)
+        # * add the .xtb.trj.xyz file to the copy list
+        copy_file_list.append(f"{temp1_path}\\{new_trj_filename}")
 
     os.chdir("..")
 
-    mrjd.copy_important_files_to_cwd(copy_file_list, cwd)
+    copy_cmds = [
+        ("copy " + filename + " " + cwd).split()
+        if WIN_OS_BOOL
+        else ("cp " + filename + " " + cwd).split()
+        for filename in copy_file_list
+    ]
+    _ = [subprocess.run(cmd, check=True, shell=WIN_OS_BOOL) for cmd in copy_cmds]
 
     print(37 * "-")
     print("*" + "Importants files copied to CWD".center(35, " ") + "*")
@@ -414,7 +554,7 @@ if __name__ == "__main__":
         # * Run obabel
         subprocess.run(
             [
-                mrjd.obabel_bin,
+                obabel_bin,
                 f"{namespace}.xtbopt.xyz",
                 "-i",
                 "xyz",
@@ -425,9 +565,9 @@ if __name__ == "__main__":
             ],
             stdout=subprocess.PIPE,
             check=True,
-            shell=mrjd.WIN_OS_BOOL,
+            shell=WIN_OS_BOOL,
         )
 
         print(45 * "-")
-        print("*" + "Additional conversion to chem3d format done".center(43, " ") + "*")
+        print("*" + "Conversion to chem3d format done".center(43, " ") + "*")
         print(45 * "-")
