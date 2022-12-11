@@ -4,7 +4,7 @@
 """
 Author: Martin Dagleish (MRJD)
 
-Version 0.5.6
+Version 0.5.7
 
 This script is a wrapper for the XTB programme. It is designed 
 to be a modular and easy to use script for the user. 
@@ -36,6 +36,7 @@ SOFTWARE.
 """
 
 # * Changelog:
+# * 0.5.7  - Whitespace cleanup and made 'ext' same everywhere
 # * 0.5.6  - Refactored code and move many subroutines to separate file.
 # * 0.5.5  - Styling
 # * 0.5.4  - Fixed "copy_file_list" not defined error -> default list is defined globally
@@ -74,7 +75,7 @@ SOFTWARE.
 # *       This is easier to use and more flexible.
 # * 0.1.0 - Initial release
 
-VERSION = "0.5.6"
+VERSION = "0.5.7"
 
 import os
 import sys
@@ -175,7 +176,7 @@ xtb_parser.add_argument(
     type=str,
     metavar="MULT",
     help="If you want to run in unrestricted Hartree Fock mode to account for \
-        non-Singulett states.",
+          non-Singulett states.",
 )
 xtb_parser.add_argument(
     "--chem3d",
@@ -201,7 +202,8 @@ xtb_parser.add_argument(
     "--input",
     metavar="INPUT",
     type=str,
-    help="The input file to change parameters for the calculation. In the Turbomole (xcoord) format.",
+    help="The input file to change parameters for the calculation.\
+          In the Turbomole (xcoord) format.",
 )
 xtb_parser.add_argument(
     "--add",
@@ -355,10 +357,10 @@ if __name__ == "__main__":
     # *--------------------------------------------#
 
     copy_file_list = [
-        f"{temp1_path}\\{namespace}{ext}"
+        f"{temp1_path}\\{namespace}.{ext}"
         for ext in (
-            ".out",
-            ".xtbopt.xyz",
+            "out",
+            "xtbopt.xyz",
         )
     ]
 
