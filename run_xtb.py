@@ -401,10 +401,6 @@ if __name__ == "__main__":
 
     mrjd.copy_important_files_to_cwd(copy_file_list, cwd)
 
-    print(37 * "-")
-    print("*" + "Importants files copied to CWD".center(35, " ") + "*")
-    print(37 * "-")
-
     # * OLD CODE
     if args.chem3d:
         # * Additional conversion to "chem3d format"
