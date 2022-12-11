@@ -211,7 +211,7 @@ def copy_important_files_to_cwd(copy_file_list: list[str], cwd: str) -> None:
         copy_cmd = ("copy " + filename + " " + cwd).split() \
         if WIN_OS_BOOL \
         else ("cp " + filename + " " + cwd).split()
-        subprocess.run(copy_cmd, check=True, shell=mrjd.WIN_OS_BOOL) 
+        subprocess.run(copy_cmd, check=True, shell=WIN_OS_BOOL) 
     print(37 * "-")
     print("*" + "Importants files copied to CWD".center(35, " ") + "*")
     print(37 * "-")
