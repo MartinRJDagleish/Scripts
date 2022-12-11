@@ -36,7 +36,7 @@ SOFTWARE.
 """
 
 # * Changelog:
-# * 0.5.6  - Refactored code and move many subroutines to separate file. 
+# * 0.5.6  - Refactored code and move many subroutines to separate file.
 # * 0.5.5  - Styling
 # * 0.5.4  - Fixed "copy_file_list" not defined error -> default list is defined globally
 # * 0.5.3  - Edge case with hess option fixed (correct files copied) and new_trj_filename added
@@ -76,8 +76,8 @@ SOFTWARE.
 
 VERSION = "0.5.6"
 
-import os 
-import sys 
+import os
+import sys
 
 try:
     import argparse
@@ -90,7 +90,7 @@ except ImportError:
     print("Please install subprocess. E.g. 'pip install subprocess'")
     sys.exit(1)
 
-import run_calc_mrjd as mrjd # * My own module with subroutines
+import run_calc_mrjd as mrjd  # * My own module with subroutines
 
 # from rich import inspect
 # * ↑ for debugging
@@ -321,7 +321,7 @@ if __name__ == "__main__":
         except ValueError:
             print(
                 f"The solvent '{args.solvent}' is not supported.\n\
-                  Possible solvents are:\n\n {', '.join(solvent_dict.keys())}"
+                  Possible solvents are:\n\n {', '.join(mrjd.solvent_dict.keys())}"
             )
             sys.exit(1)
 
@@ -330,18 +330,17 @@ if __name__ == "__main__":
         options.append("--uhf")
         options.append(multip)
 
-    
     # *---------------------------------#
     # * MAIN PROCEDURE STARTS HERE
     # *---------------------------------#
-    
+
     temp1_path = mrjd.create_temp1_folder(cwd)
     # * copy .xyz file to temp1 folder
     mrjd.copy_file_temp(temp1_path, xyz_file)
-    
+
     # * copy input file (if exists) to temp1 folder
     if args.input:
-        mrjd.copy_file_temp(temp1_path, input_file) 
+        mrjd.copy_file_temp(temp1_path, input_file)
 
     os.chdir(temp1_path)
 
@@ -349,12 +348,12 @@ if __name__ == "__main__":
     # * Run the calculation
     # *---------------------------------#
 
-    mrjd.xtb_call(xyz_file, job_type, options, namespace, addit_args) 
+    mrjd.xtb_call(xyz_file, job_type, options, namespace, addit_args)
 
     # *--------------------------------------------#
     # * Run rename of xtbopt.log for OPT jobs only
     # *--------------------------------------------#
-    
+
     copy_file_list = [
         f"{temp1_path}\\{namespace}{ext}"
         for ext in (
