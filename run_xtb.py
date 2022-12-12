@@ -4,7 +4,7 @@
 """
 Author: Martin Dagleish (MRJD)
 
-Version 0.5.8
+Version 0.5.9
 
 This script is a wrapper for the XTB programme. It is designed 
 to be a modular and easy to use script for the user. 
@@ -36,6 +36,7 @@ SOFTWARE.
 """
 
 # * Changelog:
+# * 0.5.9  - Fixed file output depending on job type -> .xtbopt.xyz only in opt type jobs
 # * 0.5.8  - Fixed wrong path string (previously only compat. with Windows) now works \ 
 # *          on Linux and MacOS
 # * 0.5.7  - Whitespace cleanup and made 'ext' same everywhere
@@ -77,7 +78,7 @@ SOFTWARE.
 # *       This is easier to use and more flexible.
 # * 0.1.0 - Initial release
 
-VERSION = "0.5.8"
+VERSION = "0.5.9"
 
 import os
 import sys
@@ -358,17 +359,14 @@ if __name__ == "__main__":
     # * Run rename of xtbopt.log for OPT jobs only
     # *--------------------------------------------#
 
-    copy_file_list = [
-        os.path.join(temp1_path, f"{namespace}.{ext}")
-        for ext in (
-            "out",
-            "xtbopt.xyz",
-        )
-    ]
+    # * General output is in .out and depending on the job type, there are more files
+    copy_file_list = [os.path.join(temp1_path, f"{namespace}.out")]
 
     if OPT_BOOL:
         renamed_file = mrjd.rename_file(namespace, "xtbopt.log", "xtbopt.trj.xyz")
+        opt_geom_xyz_path = os.path.join(temp1_path, f"{namespace}.xtbopt.xyz")
         copy_file_list.append(os.path.join(temp1_path, renamed_file))
+        copy_file_list.append(opt_geom_xyz_path)
 
     if HESS_BOOL:
         subprocess.run(
