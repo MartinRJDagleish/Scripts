@@ -4,7 +4,7 @@
 """
 Author: Martin Dagleish (MRJD)
 
-Version 0.5.7
+Version 0.5.8
 
 This script is a wrapper for the XTB programme. It is designed 
 to be a modular and easy to use script for the user. 
@@ -36,6 +36,8 @@ SOFTWARE.
 """
 
 # * Changelog:
+# * 0.5.8  - Fixed wrong path string (previously only compat. with Windows) now works \ 
+# *          on Linux and MacOS
 # * 0.5.7  - Whitespace cleanup and made 'ext' same everywhere
 # * 0.5.6  - Refactored code and move many subroutines to separate file.
 # * 0.5.5  - Styling
@@ -75,7 +77,7 @@ SOFTWARE.
 # *       This is easier to use and more flexible.
 # * 0.1.0 - Initial release
 
-VERSION = "0.5.7"
+VERSION = "0.5.8"
 
 import os
 import sys
@@ -357,7 +359,7 @@ if __name__ == "__main__":
     # *--------------------------------------------#
 
     copy_file_list = [
-        f"{temp1_path}\\{namespace}.{ext}"
+        os.path.join(temp1_path, f"{namespace}.{ext}")
         for ext in (
             "out",
             "xtbopt.xyz",
@@ -387,15 +389,13 @@ if __name__ == "__main__":
 
         if args.hess:
             copy_file_list = []
-            copy_file_list.append(
-                f"{temp1_path}\\{namespace}.out"
-            )  # only in pure hess run needed
-
-        copy_file_list.append(f"{temp1_path}\\{namespace}_FREQ.molden")
+            copy_file_list.append(os.path.join(temp1_path, f"{namespace}.out"))
+            # only in pure hess run needed
+            copy_file_list.append(os.path.join(temp1_path, f"{namespace}_FREQ.molden"))
 
     if MD_BOOL:
         renamed_file = mrjd.rename_file(namespace, "xtb.trj", "xtb.trj.xyz")
-        copy_file_list.append(f"{temp1_path}\\{renamed_file}")
+        copy_file_list.append(os.path.join(temp1_path, renamed_file))
 
     os.chdir("..")
 
