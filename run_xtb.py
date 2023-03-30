@@ -37,7 +37,7 @@ SOFTWARE.
 
 # * Changelog:
 # * 0.5.9  - Fixed file output depending on job type -> .xtbopt.xyz only in opt type jobs
-# * 0.5.8  - Fixed wrong path string (previously only compat. with Windows) now works \ 
+# * 0.5.8  - Fixed wrong path string (previously only compat. with Windows) now works \
 # *          on Linux and MacOS
 # * 0.5.7  - Whitespace cleanup and made 'ext' same everywhere
 # * 0.5.6  - Refactored code and move many subroutines to separate file.
@@ -104,13 +104,15 @@ xtb_parser = argparse.ArgumentParser(
     prog="run_xtb.py",
     usage="%(prog)s xyz_file [options]",
     description=f"Run a XTB calculation for a given xyz file. \
-        Optimization and frequency calculations are done per default. -> Script Version {VERSION}",
+        Optimization and frequency calculations are done per default.\
+            -> Script Version {VERSION}",
 )
 xtb_parser.add_argument(
     "xyz_file",  #! Positional argument
     metavar="xyz_file",
     type=str,
-    help="The xyz file to run the calculation on. Add .xyz extension to name (e.g. my_mol.xyz)",
+    help="The xyz file to run the calculation on. Add .xyz extension to name \
+        (e.g. my_mol.xyz)",
 )
 xtb_parser.add_argument(
     "--opt",
