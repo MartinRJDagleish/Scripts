@@ -1,4 +1,4 @@
- def valid_permut(i,j,k,l):
+def valid_permut(i,j,k,l):
     i,j,k,l = str(i),str(j),str(k),str(l)
     permuts = []
     permuts.append(i+j+k+l)

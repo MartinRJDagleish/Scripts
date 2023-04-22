@@ -17,6 +17,21 @@
                 "water",
             ],
             
+        },
+        {
+            "name": "Python analyze_trj_xyz",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                // "sources/Test.trj.xyz",
+                // "-xtb",
+                "sources/orca_test.trj.xyz",
+                "-orca",
+                "-print"
+            ],
         }
     ]
 }
