@@ -1,7 +1,7 @@
 #!/bin/bash
 # -*- coding: utf-8 -*-
 
-cat << LICENSE
+LICENSE=$(cat << LICENSE
 Author: Martin Dagleish (MRJD)
 
 Version 0.1.0
@@ -31,6 +31,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 LICENSE
+)
 
 # * Changelog
 # * 0.1.0 - Initial release
@@ -76,7 +77,7 @@ fi
 
 # get file name as variable
 # name=`echo "$1" | sed "s/\.inp//" | sed "s/.\///"`
-name = "$(echo "$1")"
+name="$(echo "$1")"
 #! IF THE ABOVE DOES NOT WORK: name = `echo "$1"`
 
 CENSO_nec_files=("crest_conformers.xyz" "coord" "anmr_nucinfo" "anmr_rotamer")
@@ -99,17 +100,11 @@ done
 #! DEFAULT VALUES
 nuclei="${nuclei:-1H}"
 freq="${freq:-300.0}"
-func0="${func0:-b97-d}"
+func0="${func0:-b97-d3}"
 funcNMR="${funcNMR:-tpss-d4}"
 basis_set="${basis_set:-pcsseg-2}"
 solvent="${solvent:-chcl3}"
 
-# Print the values of the variables
-echo "freq: $freq"
-echo "func0: $func0"
-echo "funcNMR: $funcNMR"
-echo "basis_set: $basis_set"
-echo "solvent: $solvent"
 
 # OPTIONS
 #! NEW
@@ -162,6 +157,13 @@ case "$2" in
 esac
 shift 1
 
+#* Print the values of the variables
+echo "freq: $freq"
+echo "func0: $func0"
+echo "funcNMR: $funcNMR"
+echo "basis_set: $basis_set"
+echo "solvent: $solvent"
+
 # ! NEW
 declare -A nuc_bool_dict=(
     ["1H"]="off"
@@ -190,8 +192,8 @@ fi
 # ! NEW
 # WRITE A .censorc file with the given options
 mod_censorc=$(cat <<-EOF
-$CENSO global configuration file: .censorc
-$VERSION:1.2.0
+\$CENSO global configuration file: .censorc
+\$VERSION:1.2.0
 
 ORCA: $orcadir
 ORCA version: 5.0.4
@@ -202,10 +204,10 @@ escf: /path/including/binary/escf-binary
 
 #COSMO-RS
 ctd = BP_TZVP_C30_1601.ctd cdir = "/software/cluster/COSMOthermX16/COSMOtherm/CTDATA-FILES" ldir = "/software/cluster/COSMOthermX16/COSMOtherm/CTDATA-FILES"
-$ENDPROGRAMS
+\$ENDPROGRAMS
 
-$CRE SORTING SETTINGS:
-$GENERAL SETTINGS:
+\$CRE SORTING SETTINGS:
+\$GENERAL SETTINGS:
 nconf: all                       # ['all', 'number e.g. 10 up to all conformers']
 charge: 0                        # ['number e.g. 0']
 unpaired: 0                      # ['number e.g. 0']
@@ -232,21 +234,21 @@ omp: $ncpus                      # ['number cores per thread e.g. 4']
 balance: off                     # ['on', 'off']
 cosmorsparam: automatic          # ['automatic', '12-fine', '12-normal', '13-fine', '13-normal', '14-fine', '...']
 
-$PART0 - CHEAP-PRESCREENING - SETTINGS:
+\$PART0 - CHEAP-PRESCREENING - SETTINGS:
 part0: on                        # ['on', 'off']
 func0: b97-d3                    # ['b3-lyp', 'b3lyp', 'b3lyp-3c', 'b3lyp-d3', 'b3lyp-d3(0)', 'b3lyp-d4', '...']
 basis0: def2-SV(P)               # ['automatic', 'def2-SV(P)', 'def2-TZVP', 'def2-mSVP', 'def2-mSVP', 'def2-mSVP', '...']
 part0_gfnv: gfn2                 # ['gfn1', 'gfn2', 'gfnff']
 part0_threshold: 4.0             # ['number e.g. 4.0']
 
-$PART1 - PRESCREENING - SETTINGS:
+\$PART1 - PRESCREENING - SETTINGS:
 # func and basis is set under GENERAL SETTINGS
 part1: on                        # ['on', 'off']
 smgsolv1: smd                    # ['alpb_gsolv', 'cosmo', 'cosmors', 'cosmors-fine', 'cpcm', 'dcosmors', '...']
 part1_gfnv: gfn2                 # ['gfn1', 'gfn2', 'gfnff']
 part1_threshold: 3.5             # ['number e.g. 5.0']
 
-$PART2 - OPTIMIZATION - SETTINGS:
+\$PART2 - OPTIMIZATION - SETTINGS:
 # func and basis is set under GENERAL SETTINGS
 part2: on                        # ['on', 'off']
 prog2opt: prog                   # ['tm', 'orca', 'prog', 'automatic']
@@ -264,7 +266,7 @@ spearmanthr: -4.0                # ['value between -1 and 1, if outside set auto
 radsize: 10                      # ['number e.g. 8 or 10']
 crestcheck: off                  # ['on', 'off']
 
-$PART3 - REFINEMENT - SETTINGS:
+\$PART3 - REFINEMENT - SETTINGS:
 part3: off                       # ['on', 'off']
 prog3: prog                      # ['tm', 'orca', 'prog']
 func3: pw6b95                    # ['b3-lyp', 'b3lyp', 'b3lyp-3c', 'b3lyp-d3', 'b3lyp-d3(0)', 'b3lyp-d4', 'b3lyp-nl', '...']
@@ -273,8 +275,8 @@ smgsolv3: smd                    # ['alpb_gsolv', 'cosmo', 'cosmors', 'cosmors-f
 part3_gfnv: gfn2                 # ['gfn1', 'gfn2', 'gfnff']
 part3_threshold: 99              # ['Boltzmann sum threshold in %. e.g. 95 (between 1 and 100)']
 
-$NMR PROPERTY SETTINGS:
-$PART4 SETTINGS:
+\$NMR PROPERTY SETTINGS:
+\$PART4 SETTINGS:
 part4: on                     # ['on', 'off']
 couplings: on                    # ['on', 'off']
 progJ: orca                      # ['tm', 'orca', 'prog']
@@ -298,14 +300,14 @@ reference_31P: TMP               # ['TMP', 'PH3']
 31P_active: ${nuc_bool_dict["31P"]} # ['on', 'off']
 resonance_frequency: $freq       # ['MHz number of your experimental spectrometer setup']
 
-$OPTICAL ROTATION PROPERTY SETTINGS:
-$PART5 SETTINGS:
+\$OPTICAL ROTATION PROPERTY SETTINGS:
+\$PART5 SETTINGS:
 optical_rotation: off            # ['on', 'off']
 funcOR: pbe                      # ['functional for opt_rot e.g. pbe']
 funcOR_SCF: r2scan-3c            # ['functional for SCF in opt_rot e.g. r2scan-3c']
 basisOR: def2-SVPD               # ['basis set for opt_rot e.g. def2-SVPD']
 frequency_optical_rot: [589.0]   # ['list of freq in nm to evaluate opt rot at e.g. [589, 700]']
-$END CENSORC
+\$END CENSORC
 EOF
 )
 
@@ -362,9 +364,9 @@ echo -e 'cp .censorc $SLURM_TMPDIR/' >> $name.qs
 # ! create CENSO CLI call with all given options
 # ! ------------------------------------------------------
 
-censo_call="${grimmedir}/crest --input crest_conformers.xyz --func0 ${func0} \
---solvent ${solvent} --smgsolv1 smd --sm2 smd --smgsolv2 smd --prog orca --part4 on \
---prog4J orca -funcJ ${funcNMR} -funcS ${funcNMR} -basisJ ${basisNMR} -basisS ${basisNMR} \
+censo_call="${grimmedir}/censo --input crest_conformers.xyz --func0 ${func0} \
+--solvent ${solvent} --smgsolv1 smd -sm2 smd --smgsolv2 smd --prog orca --part4 on \
+--prog4J orca -funcJ ${funcNMR} -funcS ${funcNMR} -basisJ ${basis_set} -basisS ${basis_set} \
 -cactive off > ${olddir}/${name}.out"
 
 
@@ -386,11 +388,12 @@ censo_call="${grimmedir}/crest --input crest_conformers.xyz --func0 ${func0} \
 
 # go to scratch, do the job, copy back files, clean up
 echo -e 'cd $SLURM_TMPDIR' >> $name.qs
-echo -e "'$censo_call'" >> $name.qs
+echo -e "$censo_call" >> $name.qs
 echo -e "mv * $olddir/" >> $name.qs
 echo -e 'rm -rf $SLURM_TMPDIR' >> $name.qs
 
 
 # execute $name.qs job file via SLURM
-sbatch -o $name.o%j -e $name.e%j "$@" $name.qs
+# OLD: sbatch -o $name.o%j -e $name.e%j "$@" $name.qs
+sbatch -o $name.o%j -e $name.e%j $name.qs
 
