@@ -11,7 +11,7 @@ from sys import argv, exit
 MAX_GEOM = 2000
 IS_XTB = False  # default value
 IS_ORCA = False  # default value
-IS_PRINT = False  # default value
+IS_PLOT = False  # default value
 
 
 def read_blocks_trj_xyz(
@@ -86,7 +86,7 @@ if __name__ == "__main__":
                 IS_ORCA = True
                 print("ORCA FLAG DETECTED")
             elif "-print" in arg:
-                IS_PRINT = True
+                IS_PLOT = True
                 print("PRINT FLAG DETECTED")
                 import matplotlib.pyplot as plt
 
@@ -113,7 +113,8 @@ if __name__ == "__main__":
         geom_matr_list.append((idx_geom, read_blocks_trj_xyz(block, idx_geom)))
 
     print("Energies: ", E_array)
-    if IS_PRINT:
+    print("You can plot these energies by adding the -plot flag")
+    if IS_PLOT:
         print("Plotting Energies vs Geometries")
         X = np.arange(NO_GEOM)
         fig, ax = plt.subplots()

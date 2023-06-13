@@ -63,11 +63,11 @@ try:
     XTB_PATH: str = (
         subprocess.run(
             ["where.exe", "xtb"], stdout=subprocess.PIPE, check=True
-        ).stdout.decode("utf-8").split("\r\n")[0]
+        ).stdout.decode("utf-8")
         if WIN_OS_BOOL
         else subprocess.run(
             ["which", "xtb"], stdout=subprocess.PIPE, check=True
-        ).stdout.decode("utf-8").split("\n")[0]
+        ).stdout.decode("utf-8")
     )
     xtb_bin = XTB_PATH.strip()
 except subprocess.CalledProcessError:
@@ -80,11 +80,11 @@ try:
     OPENBABEL_PATH = (
         subprocess.run(
             ["where.exe", "obabel"], stdout=subprocess.PIPE, check=True
-        ).stdout.decode("utf-8").split("\r\n")[0]
+        ).stdout.decode("utf-8")
         if WIN_OS_BOOL
         else subprocess.run(
             ["which", "obabel"], stdout=subprocess.PIPE, check=True
-        ).stdout.decode("utf-8").split("\n")[0]
+        ).stdout.decode("utf-8")
     )
     obabel_bin = OPENBABEL_PATH.strip()
 except subprocess.CalledProcessError:
