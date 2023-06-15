@@ -1,0 +1,139 @@
+#!/bin/bash
+
+#scratchdir=\$TMPDIR
+olddir=$(pwd)
+ncpus=1
+nnodes=1
+# ntaskspercore=1 #does not work with hyperthreading if simply set to 2.
+queue="cupn"
+orcadir="/sw/orca_5_0_4"
+xtbdir="/sw/xtb/xtb-6.6.0/bin"
+nodes=""
+
+
+# check if input file is given and/or existing
+if [ -z "$1" -o "$1" == "-h" ];then
+    echo
+    echo "Send an orca job (with xTB connection) to the queuing system"
+    echo
+    echo "Usage: $0 <ORCA input file>.inp [options]"
+    echo
+    echo "Options:"
+    echo "   -np <ncpus>   	Specify the number of processes [default: 1. Max number depends on node]"
+    echo "   -q <partition>	Specify the partition for the job. [default: all]"
+    echo "   -w <node>       	Specify the node for the job."
+    echo
+    exit 0
+fi
+
+
+# get file name as variable
+name=`echo "$1" | sed "s/\.inp//" | sed "s/.\///"`
+
+if [ ! -f "$name.inp" ]; then
+    echo
+    echo "ORCA input file $name.inp not found!"
+    echo
+    exit 1
+fi
+
+
+# check for options
+opts="true"
+while [ "$opts" == "true" ]; do
+    case "$2" in
+	"-np")
+            ncpus=$3
+            shift 2
+            ;;
+	"-nn")
+            nnodes=$3
+            shift 2
+            ;;
+#	"-ntpc")
+#            ntaskspercore=$3
+#            shift 2
+#            ;;
+	"-q")
+	    queue=$3
+	    shift 2
+            ;;
+	"-w")
+	    nodes=$3
+	    shift 2
+	    ;;
+        *)
+            opts=false
+            ;;
+    esac
+done
+
+shift 1
+
+
+# add shebang
+echo -e "#!/bin/bash" > $name.qs
+
+
+# set SLURM options
+echo "#SBATCH --job-name=$name" >> $name.qs
+echo "#SBATCH --output=$name.o%j" >> $name.qs
+echo "#SBATCH --error=$name.e%j" >> $name.qs
+if [ -z $nodes ]; then
+        echo "#SBATCH --partition=$queue" >> $name.qs
+else
+        echo "#SBATCH --nodelist=$nodes" >> $name.qs
+        echo "#SBATCH --partition=$queue" >> $name.qs
+fi
+echo "#SBATCH --ntasks=$ncpus" >> $name.qs
+echo "#SBATCH --nodes=$nnodes" >> $name.qs
+echo "#SBATCH --cpus-per-task=1" >> $name.qs
+#echo "#SBATCH --ntasks-per-core=$ntaskspercore" >> $name.qs
+#echo "#SBATCH --tasks-per-node=$ncpus" >> $qsfile
+#echo '#SBATCH --time=1000:00:00' >> $qsfile
+echo "#SBATCH --distribution=cyclic" >> $name.qs
+
+
+# create working directory in scratch
+echo 'SLURM_TMPDIR=/scratch/slurm.$SLURM_JOB_ID' >> $name.qs
+echo 'mkdir $SLURM_TMPDIR' >> $name.qs
+
+
+# set environment
+echo -e 'export LD_LIBRARY_PATH=/sw/openmpi411/lib:$LD_LIBRARY_PATH' >> $name.qs
+echo -e 'export PATH=/usr/local/bin:$PATH' >> $name.qs
+echo -e 'export PATH=/sw/openmpi411/bin:$PATH' >> $name.qs
+echo -e 'export PATH='"$orcadir"':$PATH' >> $name.qs
+echo -e 'export PATH='"$xtbdir"':$PATH' >> $name.qs
+echo -e 'export NBOEXE=/sw/nbo6/bin/nbo6.i4.exe' >> $name.qs
+echo -e 'export GENEXE=/sw/nbo6/bin/gennbo.i4.exe' >> $name.qs
+
+
+# copy relevant ORCA files to scratch
+echo -e "OLDDIR=$olddir" >> $name.qs
+echo -e "inp=$name.inp" >> $name.qs
+echo -e 'cp $inp $SLURM_TMPDIR/$inp' >> $name.qs
+echo -e 'cp $OLDDIR/'"$name.gbw"' $SLURM_TMPDIR/ 2> /dev/null' >> $name.qs
+
+# fix?
+echo -e 'cp $(which otool_xtb) $SLURM_TMPDIR/'
+
+
+# copying all files which are mentioned in a '%moinp "moinp_file.anything"'-line by reading them into an array
+moinp_files=($(grep 'moinp' $name.inp | awk '{gsub("\"", ""); print $2}' | tr -d '\r'))
+for (( file=0; file<${#moinp_files[@]}; file++ ))
+do
+        echo -e 'cp $OLDDIR/'"${moinp_files[$file]}"' $SLURM_TMPDIR/' >> $name.qs
+done
+
+
+# go to scratch, do the job, copy back files, clean up
+echo -e 'cd $SLURM_TMPDIR' >> $name.qs
+echo -e "$orcadir/orca $name.inp > $olddir/$name.out" >> $name.qs
+echo -e "mv * $olddir/" >> $name.qs
+echo -e 'rm -rf $SLURM_TMPDIR' >> $name.qs
+
+
+# execute $name.qs job file via SLURM
+sbatch -o $name.o%j -e $name.e%j "$@" $name.qs
+

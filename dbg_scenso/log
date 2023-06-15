@@ -1,0 +1,13 @@
+Name: my_name
+Nuclei: 1H 13C
+Frequency: 400.0
+Functional Part0: r2-scan3c
+Functional Part4: tpss-d4
+Basis set: pcsseg-2
+Solvent: chcl3
+31P: off
+13C: on
+29Si: off
+1H: on
+19F: off
+Choosen frequency value: 400.0

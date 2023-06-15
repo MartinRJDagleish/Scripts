@@ -1,44 +1,5 @@
-#!/bin/bash
+#!/bin/bash 
 # -*- coding: utf-8 -*-
-VERSION="0.2.0"
-
-LICENSE=$(cat << LICENSE
-Author: Martin Dagleish (MRJD)
-
-Version $VERSION
-
-This is a wrapper script for the CENSO programme.
-
-MIT License
-
-Copyright (c) 2023 Martin Dagleish
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
-LICENSE
-)
-
-# * Changelog
-# * 0.2.0 - Complete rewrite to use multiple bugs -> CLI args parsing should now work
-# * 0.1.0 - Initial release
-
-
 #scratchdir=\$TMPDIR
 olddir=$(pwd)
 ncpus=1
@@ -102,6 +63,8 @@ done
 
 
 #! NEW
+# opts=true
+# while [[ $# -gt 0 && $opts == true ]]; do
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -h)
@@ -391,87 +354,4 @@ frequency_optical_rot: [589.0]   # ['list of freq in nm to evaluate opt rot at e
 \$END CENSORC
 EOF
 )
-
-#------------------------------------------------------------------------------------------------
-# add shebang
-echo -e "#!/bin/bash" > $name.qs
-
-# set SLURM options
-echo "#SBATCH --job-name=$name" >> $name.qs
-echo "#SBATCH --output=$name.o%j" >> $name.qs
-echo "#SBATCH --error=$name.e%j" >> $name.qs
-if [ -z $nodes ]; then
-    echo "#SBATCH --partition=$queue" >> $name.qs
-else
-    echo "#SBATCH --nodelist=$nodes" >> $name.qs
-    echo "#SBATCH --partition=$queue" >> $name.qs
-fi
-echo "#SBATCH --ntasks=$ncpus" >> $name.qs
-echo "#SBATCH --nodes=$nnodes" >> $name.qs
-echo "#SBATCH --cpus-per-task=1" >> $name.qs
-#echo "#SBATCH --ntasks-per-core=$ntaskspercore" >> $name.qs
-#echo "#SBATCH --tasks-per-node=$ncpus" >> $qsfile
-#echo '#SBATCH --time=1000:00:00' >> $qsfile
-echo "#SBATCH --distribution=cyclic" >> $name.qs
-
-
-# create working directory in scratch
-echo 'SLURM_TMPDIR=/scratch/slurm.$SLURM_JOB_ID' >> $name.qs
-echo 'mkdir $SLURM_TMPDIR' >> $name.qs
-
-# set environment
-echo -e 'export LD_LIBRARY_PATH=/sw/openmpi411/lib:$LD_LIBRARY_PATH' >> $name.qs
-echo -e 'export PATH=/usr/local/bin:$PATH' >> $name.qs
-echo -e 'export PATH=/sw/openmpi411/bin:$PATH' >> $name.qs
-echo -e 'export PATH='"$orcadir"':$PATH' >> $name.qs
-echo -e 'export PATH='"$xtbdir"':$PATH' >> $name.qs
-echo -e 'export PATH='"$grimmedir"':$PATH' >> $name.qs
-echo -e 'export NBOEXE=/sw/nbo6/bin/nbo6.i4.exe' >> $name.qs
-echo -e 'export GENEXE=/sw/nbo6/bin/gennbo.i4.exe' >> $name.qs
-
-#! COPY the necessary files to the scratch directory
-for file in "${CENSO_nec_files[@]}";
-do
-    echo -e 'cp '"$file"' $SLURM_TMPDIR/' >> $name.qs
-done
-#! write the new .censorc file
-echo "$mod_censorc" > .censorc
-echo "Modified .censorc written to $PWD/.censorc"
-echo -e 'cp .censorc $SLURM_TMPDIR/' >> $name.qs
-
-
-# ! ------------------------------------------------------
-# ! create CENSO CLI call with all given options
-# ! ------------------------------------------------------
-
-censo_call="${grimmedir}/censo --input crest_conformers.xyz --func0 ${func0} \
---solvent ${solvent} --smgsolv1 smd -sm2 smd --smgsolv2 smd --prog orca --part4 on \
---prog4J orca -funcJ ${funcNMR} -funcS ${funcNMR} -basisJ ${basis_set} -basisS ${basis_set} \
--cactive off > ${olddir}/${name}.out"
-
-#* copy relevant ORCA files to scratch
-# echo -e "OLDDIR=$olddir" >> $name.qs
-# echo -e "inp=$name.inp" >> $name.qs
-# echo -e 'cp $inp $SLURM_TMPDIR/$inp' >> $name.qs
-# echo -e 'cp $OLDDIR/'"$name.gbw"' $SLURM_TMPDIR/ 2> /dev/null' >> $name.qs
-
-
-# copying all files which are mentioned in a '%moinp "moinp_file.anything"'-line by reading them into an array
-# moinp_files=($(grep 'moinp' $name.inp | awk '{gsub("\"", ""); print $2}' | tr -d '\r'))
-# for (( file=0; file<${#moinp_files[@]}; file++ ))
-# do
-#     echo -e 'cp $OLDDIR/'"${moinp_files[$file]}"' $SLURM_TMPDIR/' >> $name.qs
-# done
-
-
-# go to scratch, do the job, copy back files, clean up
-echo -e 'cd $SLURM_TMPDIR' >> $name.qs
-echo -e "$censo_call" >> $name.qs
-echo -e "mv * $olddir/" >> $name.qs
-echo -e 'rm -rf $SLURM_TMPDIR' >> $name.qs
-
-
-# execute $name.qs job file via SLURM
-# OLD: sbatch -o $name.o%j -e $name.e%j "$@" $name.qs
-sbatch -o $name.o%j -e $name.e%j $name.qs
 
