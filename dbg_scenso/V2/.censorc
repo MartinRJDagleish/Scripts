@@ -36,7 +36,7 @@ prog: orca                       # ['tm', 'orca']
 func: r2scan-3c                  # ['b3-lyp', 'b3lyp', 'b3lyp-3c', 'b3lyp-d3', 'b3lyp-d3(0)', 'b3lyp-d4', 'b3lyp-nl', '...']
 basis: automatic                 # ['automatic', 'def2-TZVP', 'def2-mSVP', 'def2-mSVP', 'def2-mSVP', 'def2-mSVP', '...']
 maxthreads: 1                    # ['number of threads e.g. 2']
-omp:                       # ['number cores per thread e.g. 4']
+omp: 16                      # ['number cores per thread e.g. 4']
 balance: off                     # ['on', 'off']
 cosmorsparam: automatic          # ['automatic', '12-fine', '12-normal', '13-fine', '13-normal', '14-fine', '...']
 
@@ -104,7 +104,7 @@ reference_31P: TMP               # ['TMP', 'PH3']
 19F_active: off # ['on', 'off']
 29Si_active: off # ['on', 'off']
 31P_active: off # ['on', 'off']
-resonance_frequency: 400.0       # ['MHz number of your experimental spectrometer setup']
+resonance_frequency: 300.0       # ['MHz number of your experimental spectrometer setup']
 
 $OPTICAL ROTATION PROPERTY SETTINGS:
 $PART5 SETTINGS:

@@ -13,8 +13,9 @@
             // "args": ["my_name", "--freq", "400.0", "-np", "4", "-nO", "4", "-nP", "4"]
             // "args": ["my_name", "-np", "4", "-nO", "4"]
             // "args": ["my_name", "-nO", "4"]
-            "args": ["my_name", "-nO", "4", "-np", "4"]
+            // "args": ["my_name", "-nO", "4", "-np", "4"]
             // "args": ["my_name", "--freq", "400.0"]
+            "args": ["my_name", "-np", "16", "--restart"]
         },
         {
             "name": "Python run_xtb.py (solvent)",

@@ -1,6 +1,6 @@
 #!/bin/bash
 # -*- coding: utf-8 -*-
-VERSION="0.2.2"
+VERSION="0.3.2"
 
 LICENSE=$(
   cat <<LICENSE
@@ -36,6 +36,10 @@ LICENSE
 )
 
 # * Changelog
+# * 0.3.2 - Added logic to copy files to SLURM_TMPDIR from prev. calc (with rsync) and added script version
+# * 0.3.1 - Added logic for restart as well (test cases worked)
+# * 0.3.0 - Added logic for nO and nP and ncpus (nO * nP = ncpus)
+# *         TODO: Add logic for queue choosing with max no. of CPUs per queue
 # * 0.2.2 - Added nO and nP with checks for queue
 # * 0.2.1 - Forgot 'ulimit -s unlimited' for xTB
 # * 0.2.0 - Complete rewrite to use multiple bugs -> CLI args parsing should now work
@@ -99,32 +103,37 @@ declare -Ar Q_RAM_DICT=(
   ["Q_CIPC_RAM"]=32
 )
 
-# check if input file is given and/or existing
-if [ -z "$1" ]; then
+# early exit, if help is requested
+case "$1" in
+"" | "-h" | "--h" | "--help" | "-help")
   echo
   echo "Send an CENSO NMR job to the queuing system"
+  echo "Script Version: $VERSION"
   echo
   echo "Usage: $0 <name>"
   echo
   echo "   <name>   	Name of calculation (without .inp)"
+  echo "   -h       	Show this help"
   echo
   echo "Slurm Options:"
-  echo "   -np <ncpus>   	   Specify the number of processes [default: 1. Max number depends on node]"
-  echo "   -nO <OMP Threads> ONLY USE WHEN YOU KNOW WHAT YOU DO: Specify the number of OMP threads [default:(calc. from -np)]"
-  echo "   -nP <MAX THREADS> nCores = nO * nP; ONLY USE WHEN YOU KNOW WHAT YOU DO: Specify the number of threads for CENSO [default:(calc. from -np)]"
-  echo "   -q <partition>	   Specify the partition for the job. [default: all]"
-  echo "   -w <node>       	 Specify the node for the job."
+  echo "   -np <ncpus>        Specify the number of processes [default: 1. Max number depends on node]"
+  echo "   -nO <OMP Threads>  ONLY USE WHEN YOU KNOW WHAT YOU DO: Specify the number of OMP threads [default:(calc. from -np)]"
+  echo "   -nP <MAX THREADS>  nCores = nO * nP; ONLY USE WHEN YOU KNOW WHAT YOU DO: Specify the number of CENSO threads [default:(calc. from -np)]"
+  echo "   -q <partition>     Specify the queue for the job. [default: all]"
+  echo "   -w <node>          Specify the number of nodes for the job."
   echo
   echo "CENSO NMR Options:"
   echo "   --nuc <nuclei>          Chose the nuclei for which the NMR shielding constants should be calculated. (Comma sep.) [default: 1H, possible: 1H, 13C, 19F, 29Si, 31P]"
-  echo "   --freq <frequency>	     Change the lamor frequency for the NMR shielding constants calculation. (Format: 300.0) [default: 300 MHz (1H), resonable: 300 (1H), 162 (31P), ...]"
+  echo "   --freq <frequency>      Change the lamor frequency for the NMR shielding constants calculation. (Format: 300.0) [default: 300 MHz (1H), resonable: 300 (1H), 162 (31P), ...]"
   echo "   --func0 <functional>    Change the functional for the Part0: Cheap prescreening of conformers. [default: B97-D3]"
   echo "   --funcNMR <functional>  Change the functional for the Part4: NMR property (shielding and shift). [default: TPSS-D4]"
   echo "   --B <basis set>         Basis set for the NMR calculation (shielding and shift). [default: pcsseg-2, also possible: pcsseg-3, pcseg-1, ...]"
   echo "   --S <solvent>           Solvent for the NMR calculation (shielding and shift). [default: chcl3, also possible: acetonitrile, benzene, ...]"
+  echo "   --restart               Restart the calculation from the last completed step. [default: no]"
   echo
   exit 0
-fi
+  ;;
+esac
 
 # get file name as variable
 # name=`echo "$1" | sed "s/\.inp//" | sed "s/.\///"`
@@ -139,10 +148,10 @@ for file in "${CENSO_nec_files[@]}"; do
     echo "$file not found. Pls provide a valid input"
     echo
     echo "The following files are needed for a CENSO NMR calculation:"
-    echo "  crest_conformers.xyz"
-    echo "  coord"
-    echo "  anmr_nucinfo"
-    echo "  anmr_rotamer"
+    echo "   crest_conformers.xyz"
+    echo "   coord"
+    echo "   anmr_nucinfo"
+    echo "   anmr_rotamer"
     echo
     exit 1
   fi
@@ -151,32 +160,6 @@ done
 #! NEW
 while [[ $# -gt 0 ]]; do
   case "$1" in
-  -h)
-
-    echo
-    echo "Send an CENSO NMR job to the queuing system"
-    echo
-    echo "Usage: $0 <name>"
-    echo
-    echo "   <name>   	Name of calculation (without .inp)"
-    echo
-    echo "Slurm Options:"
-    echo "   -np <ncpus>   	   Specify the number of processes [default: 1. Max number depends on node]"
-    echo "   -nO <OMP Threads> ONLY USE WHEN YOU KNOW WHAT YOU DO: Specify the number of OMP threads [default:(calc. from -np)]"
-    echo "   -nP <MAX THREADS> nCores = nO * nP; ONLY USE WHEN YOU KNOW WHAT YOU DO: Specify the number of threads for CENSO [default:(calc. from -np)]"
-    echo "   -q <partition>	   Specify the partition for the job. [default: all]"
-    echo "   -w <node>       	 Specify the node for the job."
-    echo
-    echo "CENSO NMR Options:"
-    echo "   --nuc <nuclei>          Chose the nuclei for which the NMR shielding constants should be calculated. (Comma sep.) [default: 1H, possible: 1H, 13C, 19F, 29Si, 31P]"
-    echo "   --freq <frequency>	     Change the lamor frequency for the NMR shielding constants calculation. (Format: 300.0) [default: 300 MHz (1H), resonable: 300 (1H), 162 (31P), ...]"
-    echo "   --func0 <functional>    Change the functional for the Part0: Cheap prescreening of conformers. [default: B97-D3]"
-    echo "   --funcNMR <functional>  Change the functional for the Part4: NMR property (shielding and shift). [default: TPSS-D4]"
-    echo "   --B <basis set>         Basis set for the NMR calculation (shielding and shift). [default: pcsseg-2, also possible: pcsseg-3, pcseg-1, ...]"
-    echo "   --S <solvent>           Solvent for the NMR calculation (shielding and shift). [default: chcl3, also possible: acetonitrile, benzene, ...]"
-    echo
-    exit 0
-    ;;
   -np)
     if [[ -n $2 ]]; then
       ncpus="$2"
@@ -190,12 +173,18 @@ while [[ $# -gt 0 ]]; do
     if [[ -n $2 ]]; then
       nOMP="$2"
       shift 2
+    else
+      echo "Error: $1 requires an argument"
+      exit 1
     fi
     ;;
   -nP)
     if [[ -n $2 ]]; then
       nCENSO_THREADS="$2"
       shift 2
+    else
+      echo "Error: $1 requires an argument"
+      exit 1
     fi
     ;;
   -q)
@@ -228,7 +217,6 @@ while [[ $# -gt 0 ]]; do
       nuclei=("$2")
       shift 2
     fi
-    echo "rest $@"
     ;;
   --freq)
     if [[ -n $2 ]]; then
@@ -276,6 +264,13 @@ while [[ $# -gt 0 ]]; do
       exit 1
     fi
     ;;
+  --restart)
+    if [[ -n $2 ]]; then # there should be no argument
+      shift 1
+    fi
+    RESTART=true
+    shift
+    ;;
   *)
     # opts=false
     break
@@ -292,15 +287,15 @@ basis_set="${basis_set:=pcsseg-2}"
 solvent="${solvent:=chcl3}"
 
 # ECHO THE SET VALUES
-echo "Name: $name"
-echo "Nuclei: ${nuclei[@]}"
-echo "Frequency: $freq"
-echo "Functional Part0: $func0"
-echo "Functional Part4: $funcNMR"
-echo "Basis set: $basis_set"
-echo "Solvent: $solvent"
+echo "Settings provided for CENSO NMR calculation:"
+echo "  Name: $name"
+echo "  Nuclei: ${nuclei[@]}"
+echo "  Frequency: $freq"
+echo "  Functional Part0: $func0"
+echo "  Functional Part4: $funcNMR"
+echo "  Basis set: $basis_set"
+echo "  Solvent: $solvent"
 
-# ! NEW
 declare -A nuc_bool_dict=(
   ["1H"]="off"
   ["13C"]="off"
@@ -313,11 +308,12 @@ for nuc in ${nuclei[@]}; do
   if [[ ${nuc_bool_dict[$nuc]+_ } ]]; then
     nuc_bool_dict[$nuc]="on"
   else
-    echo "Invalid nucleus: $nuc"
+    echo "Invalid nucleus: $nuc; valid nuclei are: 1H, 13C, 19F, 29Si, 31P"
   fi
 done
 
 # Print settings
+echo
 echo "Nuclei settings:"
 for key in "${!nuc_bool_dict[@]}"; do
   echo "  $key: ${nuc_bool_dict[$key]}"
@@ -332,11 +328,12 @@ else
 fi
 
 # Check for cores / threads / OMP ...
-echo "ncpus: $ncpus"
-echo "nOMP: $nOMP"
-echo "nCENSO_THREADS: $nCENSO_THREADS"
+echo "Checking for cores / threads / OMP ..."
+echo "  ncpus: $ncpus"
+echo "  nOMP: $nOMP"
+echo "  nCENSO_THREADS: $nCENSO_THREADS"
 
-# Test for valid input combinations
+#* Test for valid input combinations
 if [[ -z $ncpus && -z $nOMP && -z $nCENSO_THREADS ]]; then
   echo "No cores / threads / OMP set! Going to use 1 core / thread / OMP"
   echo "Going to continue..."
@@ -356,22 +353,61 @@ elif [[ (-n $nOMP && -z $nCENSO_THREADS) || (-z $nOMP && -n $nCENSO_THREADS) ]];
   echo "INVALID INPUT! Pls use both: -nO AND -nP for calculation; or just use -np!"
   echo "Going to exit..."
   exit 1
+elif [[ -n $ncpus && -z $nOMP && -z $nCENSO_THREADS ]]; then
+  # now only valid inputs of ncpus, nOMP and nCENSO_THREADS are left
+
+  #TODO: FIX THIS! Hardcoding combinations (for now) up to 32
+  readonly ncpus_arr=(1 2 3 4 6 8 9 10 12 14 15 16 18 20 21 22 24 25 26 28 30 32)
+  if [[ ! ${ncpus_arr[@]} =~ $ncpus || $ncpus -gt 32 ]]; then
+    echo "Pls choose a different valid value for ncpus!"
+    echo "Because Cores = ncpus = nOMP * nCENSO_THREADS, thus ncpus must be a multiple of nOMP and nCENSO_THREADS!"
+    echo "Reasonable values for ncpus: ${ncpus_arr[@]}"
+    echo "Going to exit..."
+    exit 1
+  else
+    declare -rA OMP_CENSO_THREADS_COMB=(
+      [1]="1,1"
+      [2]="2,1"
+      [3]="3,1"
+      [4]="2,2"
+      [6]="3,2"
+      [8]="4,2"
+      [9]="3,3"
+      [10]="5,2"
+      [12]="4,3"
+      [14]="7,2"
+      [15]="5,3"
+      [16]="4,4"
+      [18]="6,3"
+      [20]="5,4"
+      [21]="7,3"
+      [22]="11,2"
+      [24]="6,4"
+      [25]="5,5"
+      [26]="13,2"
+      [28]="7,4"
+      [30]="6,5"
+      [32]="8,4"
+    )
+
+    # Get the value from the dictionary and split it into an array
+    IFS=',' read -ra COMBINATION <<<"${OMP_CENSO_THREADS_COMB[$ncpus]}"
+
+    # Assign the values to your variables
+    nCENSO_THREADS=${COMBINATION[0]}
+    nOMP=${COMBINATION[1]}
+  fi
+  ncpus=$((nCENSO_THREADS * nOMP))
 fi
 
-# now only valid inputs of ncpus, nOMP and nCENSO_THREADS are left
-if [[ -n $ncpus && $ncpus -gt 1 ]]; then
-  nCENSO_THREADS=$(expr $ncpus / 4)
-  nOMP=$(expr $ncpus % 4)
-  if [ $((ncpus % 4)) -eq 0 ]; then
-    nOMP=1
-  else
-    nOMP=$((ncpus % 4))
-  fi
-else
-  unset ncpus
-  nCENSO_THREADS=1
-  nOMP=1
-fi
+echo
+echo "Calculating reasonable number for nOMP and nCENSO_THREADS..."
+echo
+echo "Going to use the following values for the calculation:"
+echo "  nCENSO_THREADS: $nCENSO_THREADS"
+echo "  nOMP: $nOMP"
+
+# Calculate the NEW number of ncpus now that we have the nOMP and nCENSO_THREADS
 
 # ! NEW
 # WRITE A .censorc file with the given options
@@ -544,15 +580,36 @@ echo -e 'export GENEXE=/sw/nbo6/bin/gennbo.i4.exe' >>$name.qs
 for file in "${CENSO_nec_files[@]}"; do
   echo -e 'cp '"$file"' $SLURM_TMPDIR/' >>$name.qs
 done
+
 #! write the new .censorc file
 echo "$mod_censorc" >.censorc
 echo "Modified .censorc written to $PWD/.censorc"
+echo "This will be copied to the scratch directory..."
+echo
 echo -e 'cp .censorc $SLURM_TMPDIR/' >>$name.qs
+echo -e "OLDDIR=$olddir" >>$name.qs
 
 # IF restart is given -> calculations already done
-# Version 1 with rsync?
-
 # Version 2 with cp
+if [[ $RESTART ]]; then
+  echo "RESTART active!"
+  echo
+  echo "Make sure you are executing this script from the same directory as the previous calculation!"
+  echo "Copying files from previous calculation to scratch directory..."
+  echo
+  if [[ $(pwd) = $HOME ]]; then
+    echo "ERROR: Refusing to copy WHOLE HOME directory to scratch!"
+    echo "Please execute this script from the same directory as the previous calculation!"
+    exit 1
+  fi
+  # echo -e "cp -r $olddir/* \$SLURM_TMPDIR/" >>$name.qs
+  echo -e "rsync -rav --exclude='*.[e,o][0-9]*' $olddir/* \$SLURM_TMPDIR/" >>$name.qs
+  restart_opt="--restart"
+
+  echo "Restarting now from previous calculation..."
+fi
+# Version 1 with rsync?
+restart_opt="${restart_opt:=}"
 
 # ! ------------------------------------------------------
 # ! create CENSO CLI call with all given options
@@ -561,7 +618,8 @@ echo -e 'cp .censorc $SLURM_TMPDIR/' >>$name.qs
 censo_call="${grimmedir}/censo --input crest_conformers.xyz --func0 ${func0} \
 --solvent ${solvent} --smgsolv1 smd -sm2 smd --smgsolv2 smd --prog orca --part4 on \
 --prog4J orca -funcJ ${funcNMR} -funcS ${funcNMR} -basisJ ${basis_set} -basisS ${basis_set} \
--cactive off > ${olddir}/${name}.out"
+-cactive off -P ${nCENSO_THREADS} -O ${nOMP} ${restart_opt} > ${olddir}/${name}.out"
+# echo $censo_call
 
 #* copy relevant ORCA files to scratch
 # echo -e "OLDDIR=$olddir" >> $name.qs
@@ -578,10 +636,10 @@ censo_call="${grimmedir}/censo --input crest_conformers.xyz --func0 ${func0} \
 
 # go to scratch, do the job, copy back files, clean up
 echo -e 'cd $SLURM_TMPDIR' >>$name.qs
+echo -e 'export PYTHONUNBUFFERED=1' >>$name.qs # in example script but not sure why
 echo -e "$censo_call" >>$name.qs
 echo -e "mv * $olddir/" >>$name.qs
 echo -e 'rm -rf $SLURM_TMPDIR' >>$name.qs
 
 # execute $name.qs job file via SLURM
-# OLD: sbatch -o $name.o%j -e $name.e%j "$@" $name.qs
-# sbatch -o $name.o%j -e $name.e%j $name.qs
+sbatch -o $name.o%j -e $name.e%j $name.qs
