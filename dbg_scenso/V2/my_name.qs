@@ -3,7 +3,7 @@
 #SBATCH --output=my_name.o%j
 #SBATCH --error=my_name.e%j
 #SBATCH --partition=cupn
-#SBATCH --ntasks=16
+#SBATCH --ntasks=
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=1
 #SBATCH --distribution=cyclic
@@ -28,9 +28,8 @@ cp anmr_nucinfo $SLURM_TMPDIR/
 cp anmr_rotamer $SLURM_TMPDIR/
 cp .censorc $SLURM_TMPDIR/
 OLDDIR=/mnt/d/Scripts/dbg_scenso/V2
-rsync -rav --exclude='*.[e,o][0-9]*' /mnt/d/Scripts/dbg_scenso/V2/* $SLURM_TMPDIR/
 cd $SLURM_TMPDIR
 export PYTHONUNBUFFERED=1
-/sw/xtb/censo --input crest_conformers.xyz --func0 b97-d3 --solvent chcl3 --smgsolv1 smd -sm2 smd --smgsolv2 smd --prog orca --part4 on --prog4J orca -funcJ tpss-d4 -funcS tpss-d4 -basisJ pcsseg-2 -basisS pcsseg-2 -cactive off -P 4 -O 4 --restart > /mnt/d/Scripts/dbg_scenso/V2/my_name.out
+/sw/xtb/censo --input crest_conformers.xyz --func0 b97-d3 --solvent chcl3 --smgsolv1 smd -sm2 smd --smgsolv2 smd --prog orca --part4 on --prog4J orca -funcJ tpss-d4 -funcS tpss-d4 -basisJ pcsseg-2 -basisS pcsseg-2 -cactive off -P 3 -O 4  > /mnt/d/Scripts/dbg_scenso/V2/my_name.out
 mv * /mnt/d/Scripts/dbg_scenso/V2/
 rm -rf $SLURM_TMPDIR

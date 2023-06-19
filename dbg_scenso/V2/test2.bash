@@ -1,6 +1,6 @@
 #!/bin/bash
 # -*- coding: utf-8 -*-
-VERSION="0.3.2"
+VERSION="0.3.4"
 
 LICENSE=$(
   cat <<LICENSE
@@ -35,7 +35,14 @@ SOFTWARE.
 LICENSE
 )
 
+RED='\033[0;31m'  # Red
+CLR_OFF='\033[0m' # Text Reset
+
+#TODO:
+
 # * Changelog
+# * 0.3.4 - Exit with err if first arg is not namespace for calc
+# * 0.3.3 - Added check for numeric values for nO, nP and ncpus + merged freq num into case
 # * 0.3.2 - Added logic to copy files to SLURM_TMPDIR from prev. calc (with rsync) and added script version
 # * 0.3.1 - Added logic for restart as well (test cases worked)
 # * 0.3.0 - Added logic for nO and nP and ncpus (nO * nP = ncpus)
@@ -47,7 +54,6 @@ LICENSE
 
 #scratchdir=\$TMPDIR
 olddir=$(pwd)
-# ncpus=1 # <- default below not here! -> needed for nO and nP
 nnodes=1
 # ntaskspercore=1 #does not work with hyperthreading if simply set to 2.
 queue="cupn"
@@ -135,6 +141,13 @@ case "$1" in
   ;;
 esac
 
+if [[ -n $1 && $1 =~ ^-.* || $1 =~ ^--.* ]]; then 
+  echo -e "${RED}ERROR:${CLR_OFF} Invalid option: $1\n"
+  echo -e "Use -h for help\n"
+  echo -e "First argument must be the name of the calculation (without .inp; just the name)\n"
+  exit 1
+fi
+
 # get file name as variable
 # name=`echo "$1" | sed "s/\.inp//" | sed "s/.\///"`
 name="$(echo "$1")"
@@ -143,7 +156,7 @@ shift
 
 CENSO_nec_files=("crest_conformers.xyz" "coord" "anmr_nucinfo" "anmr_rotamer")
 for file in "${CENSO_nec_files[@]}"; do
-  if [ ! -f "$file" ]; then
+  if [[ ! -f $file ]]; then
     echo
     echo "$file not found. Pls provide a valid input"
     echo
@@ -162,6 +175,10 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
   -np)
     if [[ -n $2 ]]; then
+      if [[ ! $2 =~ ^[0-9]+$ ]]; then
+        echo "Error: $1 requires an integer argument"
+        exit 1
+      fi
       ncpus="$2"
       shift 2
     else
@@ -171,6 +188,10 @@ while [[ $# -gt 0 ]]; do
     ;;
   -nO)
     if [[ -n $2 ]]; then
+      if [[ ! $2 =~ ^[0-9]+$ ]]; then
+        echo "Error: $1 requires an integer argument"
+        exit 1
+      fi
       nOMP="$2"
       shift 2
     else
@@ -180,8 +201,15 @@ while [[ $# -gt 0 ]]; do
     ;;
   -nP)
     if [[ -n $2 ]]; then
+      if [[ ! $2 =~ ^[0-9]+$ ]]; then
+        echo "Error: $1 requires an integer argument"
+        exit 1
+      fi
       nCENSO_THREADS="$2"
       shift 2
+    elif [[ ! $2 =~ ^[0-9]+$ ]]; then
+      echo "Error: $1 requires an integer argument"
+      exit 1
     else
       echo "Error: $1 requires an argument"
       exit 1
@@ -209,7 +237,7 @@ while [[ $# -gt 0 ]]; do
     if [[ $2 == *,* ]]; then
       IFS=',' read -r -a nuclei_arr <<<"$2"
 
-      for element in "${nuclei_arr[@]}"; do
+      for element in "$nuclei_arr[@]"; do
         nuclei+=("$element")
       done
       shift 2
@@ -220,7 +248,13 @@ while [[ $# -gt 0 ]]; do
     ;;
   --freq)
     if [[ -n $2 ]]; then
-      freq="$2"
+      # check the freq for being a numerical value with a dot
+      if [[ $2 =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
+        freq="$2"
+        echo "Choosen frequency value: $freq"
+      else
+        echo "Invalid frequency value: $freq, pls enter as a numerical value with a dot, e.g. 300.0"
+      fi
       shift 2
     else
       echo "Error: $1 requires an argument"
@@ -255,7 +289,6 @@ while [[ $# -gt 0 ]]; do
     fi
     ;;
   --S)
-    echo "$@"
     if [[ -n $2 ]]; then
       solvent="$2"
       shift 2
@@ -320,12 +353,6 @@ for key in "${!nuc_bool_dict[@]}"; do
 done
 
 # ! NEW
-# check the freq for being a numerical value with a dot
-if [[ "$freq" =~ [0-9]+(\.[0-9]+)?$ ]]; then
-  echo "Choosen frequency value: $freq"
-else
-  echo "Invalid frequency value: $freq, pls enter as a numerical value with a dot, e.g. 300.0"
-fi
 
 # Check for cores / threads / OMP ...
 echo "Checking for cores / threads / OMP ..."
@@ -341,8 +368,8 @@ if [[ -z $ncpus && -z $nOMP && -z $nCENSO_THREADS ]]; then
   nCENSO_THREADS=1
 elif [[ -n $ncpus && -n $nOMP && -n $nCENSO_THREADS ]]; then
   # elif [[ -n $ncpus && (-n $nOMP || -n $nCENSO_THREADS) ]]; then
-  echo "ATTENTION! You set both ncpus and OMP / CENSO THREADS! Going to ignore 'ncpus' and using OMP + CENSO threads!"
-  echo "Going to continue..."
+  echo -e "${RED}ATTENTION!${CLR_OFF} You set both ncpus and OMP / CENSO THREADS! Going to ignore 'ncpus' and using OMP + CENSO threads!"
+  echo -e "Going to continue..."
   unset ncpus
   # ↓ not needed; covered by the case below this one already ↓
   # elif [[ (-n $ncpus && -z $nOMP && -n $nCENSO_THREADS) || (-n $ncpus && -n $nOMP && -z $nCENSO_THREADS) ]]; then
@@ -398,10 +425,10 @@ elif [[ -n $ncpus && -z $nOMP && -z $nCENSO_THREADS ]]; then
     nOMP=${COMBINATION[1]}
   fi
   ncpus=$((nCENSO_THREADS * nOMP))
+  echo
+  echo "Calculating reasonable number for nOMP and nCENSO_THREADS..."
 fi
 
-echo
-echo "Calculating reasonable number for nOMP and nCENSO_THREADS..."
 echo
 echo "Going to use the following values for the calculation:"
 echo "  nCENSO_THREADS: $nCENSO_THREADS"
@@ -540,7 +567,7 @@ echo -e "#!/bin/bash" >$name.qs
 echo "#SBATCH --job-name=$name" >>$name.qs
 echo "#SBATCH --output=$name.o%j" >>$name.qs
 echo "#SBATCH --error=$name.e%j" >>$name.qs
-if [ -z $nodes ]; then
+if [[ -z $nodes ]]; then
   echo "#SBATCH --partition=$queue" >>$name.qs
 else
   echo "#SBATCH --nodelist=$nodes" >>$name.qs
