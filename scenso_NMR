@@ -540,7 +540,7 @@ echo -e "#!/bin/bash" >$name.qs
 echo "#SBATCH --job-name=$name" >>$name.qs
 echo "#SBATCH --output=$name.o%j" >>$name.qs
 echo "#SBATCH --error=$name.e%j" >>$name.qs
-if [ -z $nodes ]; then
+if [[ -z $nodes ]]; then
   echo "#SBATCH --partition=$queue" >>$name.qs
 else
   echo "#SBATCH --nodelist=$nodes" >>$name.qs
