@@ -38,7 +38,6 @@ LICENSE
 RED='\033[0;31m'  # Red
 CLR_OFF='\033[0m' # Text Reset
 
-#TODO:
 
 # * Changelog
 # * 0.3.4 - Exit with err if first arg is not namespace for calc
